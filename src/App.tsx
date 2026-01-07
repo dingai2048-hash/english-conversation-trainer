@@ -24,12 +24,16 @@ const ttsService = new SpeechSynthesisService();
 // 初始化AI服务
 const initializeAIService = (settings: AISettings) => {
   if (settings.provider === 'mock') {
-    return new AIConversationService({ apiKey: 'mock' });
+    return new AIConversationService({ 
+      apiKey: 'mock',
+      systemPrompt: settings.systemPrompt 
+    });
   } else {
     return new AIConversationService({
       apiKey: settings.apiKey,
       apiEndpoint: settings.endpoint,
       model: settings.model,
+      systemPrompt: settings.systemPrompt,
     });
   }
 };

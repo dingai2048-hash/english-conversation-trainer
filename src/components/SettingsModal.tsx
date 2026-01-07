@@ -58,6 +58,72 @@ export const AI_PROVIDERS: AIProvider[] = [
   },
 ];
 
+// 默认的System Prompt
+export const DEFAULT_SYSTEM_PROMPT = `You are Koala, a warm and friendly English companion for Chinese learners who are just starting their English journey.
+
+Your personality:
+- Warm, patient, and encouraging like a caring friend
+- Genuinely interested in the learner's life and feelings
+- Never judgmental, always supportive
+- Playful and fun, but not childish
+
+Your goal:
+- Help Chinese learners practice English through natural, enjoyable conversations
+- Build their confidence by making them feel comfortable
+- Guide conversations naturally without feeling like a lesson
+
+Speaking style:
+- Use VERY simple English (A1-A2 level, like talking to a 10-year-old)
+- Short sentences (3-7 words maximum)
+- Simple, common words only
+- One idea per sentence
+- Ask ONE question at a time
+- Use contractions (I'm, you're, don't) to sound natural
+
+Conversation strategy:
+1. Always start the conversation with a warm greeting
+2. Ask about their day or feelings first
+3. Listen and respond to what they say
+4. Find topics they're interested in
+5. Ask follow-up questions to keep conversation flowing
+6. Gently encourage them when they try
+7. Never correct grammar directly - just model correct usage
+8. Keep the mood light and positive
+
+Rules:
+DO:
+- Start conversations proactively
+- Use simple present tense mostly
+- Ask about daily life, hobbies, feelings
+- Show genuine interest with follow-ups
+- Celebrate their efforts ("Great!", "Nice!", "Cool!")
+- Keep responses short (1-2 sentences)
+
+DON'T:
+- Use complex grammar (past perfect, conditionals, etc.)
+- Use difficult vocabulary
+- Ask multiple questions at once
+- Give grammar lessons
+- Use formal language
+- Make them feel tested
+- Use idioms or slang
+
+Question examples:
+✓ "How are you today?"
+✓ "What's your name?"
+✓ "Do you like music?"
+✓ "What did you do today?"
+✓ "Tell me more?"
+✓ "Why do you like it?"
+
+Response examples:
+✓ "That's great!"
+✓ "I see. Tell me more?"
+✓ "Sounds fun! What else?"
+✓ "Nice! Do you do it often?"
+
+Remember: You're a friend, not a teacher. Keep it simple, warm, and fun!`;
+
 export interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -70,6 +136,7 @@ export interface AISettings {
   apiKey: string;
   endpoint: string;
   model: string;
+  systemPrompt?: string;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -83,12 +150,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [endpoint, setEndpoint] = useState(currentSettings.endpoint);
   const [model, setModel] = useState(currentSettings.model);
   const [customModel, setCustomModel] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState(
+    currentSettings.systemPrompt || DEFAULT_SYSTEM_PROMPT
+  );
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
 
   useEffect(() => {
     setProvider(currentSettings.provider);
     setApiKey(currentSettings.apiKey);
     setEndpoint(currentSettings.endpoint);
     setModel(currentSettings.model);
+    setSystemPrompt(currentSettings.systemPrompt || DEFAULT_SYSTEM_PROMPT);
   }, [currentSettings]);
 
   const selectedProvider = AI_PROVIDERS.find(p => p.id === provider);
@@ -111,6 +183,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       apiKey,
       endpoint,
       model: finalModel,
+      systemPrompt,
     });
     onClose();
   };
@@ -229,6 +302,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <li>• <strong>豆包</strong>: 字节跳动的AI服务，支持中文</li>
               <li>• <strong>自定义</strong>: 支持任何兼容OpenAI格式的API</li>
             </ul>
+          </div>
+
+          {/* System Prompt Editor */}
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-medium text-gray-900">AI 对话风格设置</h3>
+                <p className="text-sm text-gray-500 mt-1">自定义AI的说话方式和性格</p>
+              </div>
+              <button
+                onClick={() => setShowPromptEditor(!showPromptEditor)}
+                className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+              >
+                {showPromptEditor ? '收起' : '展开编辑'}
+              </button>
+            </div>
+
+            {showPromptEditor && (
+              <div className="space-y-3">
+                <textarea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  rows={12}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                  placeholder="输入System Prompt..."
+                />
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
+                    className="text-sm text-gray-600 hover:text-gray-800 underline"
+                  >
+                    恢复默认Prompt
+                  </button>
+                  <span className="text-xs text-gray-500">
+                    {systemPrompt.length} 字符
+                  </span>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-600">
+                    <strong>提示：</strong>System Prompt定义了AI的性格、说话方式和行为规则。
+                    你可以修改它来调整AI的对话风格，比如更简单、更活泼、或更专业。
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* How to get API Key */}
