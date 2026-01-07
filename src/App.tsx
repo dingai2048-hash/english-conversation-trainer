@@ -19,8 +19,6 @@ import { SettingsService } from './services/SettingsService';
 
 // 初始化服务
 const speechService = new SpeechRecognitionService();
-let aiService: AIConversationService;
-let ttsService: SpeechSynthesisService | ReplicateTTSService;
 
 // 初始化AI服务
 const initializeAIService = (settings: AISettings) => {
@@ -51,11 +49,6 @@ const initializeTTSService = (settings: AISettings): SpeechSynthesisService | Re
   }
 };
 
-// 从本地存储加载设置并初始化服务
-const settings = SettingsService.getSettings();
-aiService = initializeAIService(settings);
-ttsService = initializeTTSService(settings);
-
 function AppContent() {
   const {
     messages,
@@ -74,6 +67,10 @@ function AppContent() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentSettings, setCurrentSettings] = useState<AISettings>(SettingsService.getSettings());
+  
+  // 使用 useRef 来保存服务实例
+  const aiServiceRef = React.useRef<AIConversationService>(initializeAIService(currentSettings));
+  const ttsServiceRef = React.useRef<SpeechSynthesisService | ReplicateTTSService>(initializeTTSService(currentSettings));
 
   // 检查是否需要显示设置提示
   useEffect(() => {
@@ -89,14 +86,57 @@ function AppContent() {
     setCurrentSettings(newSettings);
     
     // 重新初始化AI服务
-    aiService = initializeAIService(newSettings);
+    aiServiceRef.current = initializeAIService(newSettings);
     
     // 重新初始化TTS服务
-    ttsService = initializeTTSService(newSettings);
+    ttsServiceRef.current = initializeTTSService(newSettings);
     
     // 显示成功消息
     alert('设置已保存！');
   };
+
+  // 处理发音评价请求
+  const handleRequestFeedback = useCallback(async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (!message || message.role !== 'user') return;
+
+    try {
+      setProcessing(true);
+      
+      // 构建发音评价请求
+      const feedbackPrompt = `Please evaluate my pronunciation of: "${message.content}". Give me brief, encouraging feedback in simple English (A1-A2 level). Focus on: 1) Overall clarity (good/needs work), 2) One specific tip to improve. Keep it short (2-3 sentences max).`;
+      
+      const feedbackResponse = await aiServiceRef.current.sendMessage(feedbackPrompt, []);
+      
+      // 获取翻译
+      let translation: string | undefined;
+      if (showTranslation) {
+        try {
+          translation = await aiServiceRef.current.translateToZh(feedbackResponse);
+        } catch (err) {
+          console.error('翻译失败:', err);
+        }
+      }
+      
+      // 添加AI的发音评价
+      addMessage('assistant', `🎤 ${feedbackResponse}`, translation);
+      
+      // 让AI说出评价
+      try {
+        setSpeaking(true);
+        await ttsServiceRef.current.speak(feedbackResponse, 'en-US');
+      } catch (err) {
+        console.error('语音合成失败:', err);
+      } finally {
+        setSpeaking(false);
+      }
+    } catch (err) {
+      setError('无法获取发音评价，请稍后重试。');
+      console.error('发音评价错误:', err);
+    } finally {
+      setProcessing(false);
+    }
+  }, [messages, showTranslation, addMessage, setProcessing, setSpeaking, setError]);
 
   // 处理录音切换
   const handleToggleRecording = useCallback(async () => {
@@ -120,13 +160,13 @@ function AppContent() {
 
             // 获取AI回复
             try {
-              const aiResponse = await aiService.sendMessage(recognizedText, messages);
+              const aiResponse = await aiServiceRef.current.sendMessage(recognizedText, messages);
               
               // 获取翻译（如果需要）
               let translation: string | undefined;
               if (showTranslation) {
                 try {
-                  translation = await aiService.translateToZh(aiResponse);
+                  translation = await aiServiceRef.current.translateToZh(aiResponse);
                 } catch (err) {
                   console.error('翻译失败:', err);
                   // 翻译失败不影响主流程
@@ -139,7 +179,7 @@ function AppContent() {
               // 让考拉说出回复（语音合成）
               try {
                 setSpeaking(true);
-                await ttsService.speak(aiResponse, 'en-US');
+                await ttsServiceRef.current.speak(aiResponse, 'en-US');
               } catch (err) {
                 console.error('语音合成失败:', err);
                 // 语音合成失败不影响主流程
@@ -280,6 +320,7 @@ function AppContent() {
           <ConversationDisplay
             messages={messages}
             showTranslation={showTranslation}
+            onRequestFeedback={handleRequestFeedback}
           />
         </div>
       </div>

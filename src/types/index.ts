@@ -117,6 +117,8 @@ export interface ConversationDisplayProps {
   messages: Message[];
   /** Whether to show translations */
   showTranslation: boolean;
+  /** Callback to request pronunciation feedback */
+  onRequestFeedback?: (messageId: string) => void;
 }
 
 /**
