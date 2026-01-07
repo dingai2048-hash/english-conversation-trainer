@@ -137,6 +137,9 @@ export interface AISettings {
   endpoint: string;
   model: string;
   systemPrompt?: string;
+  ttsProvider?: 'browser' | 'replicate';
+  replicateApiKey?: string;
+  replicateTTSModel?: 'turbo' | 'hd';
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -154,6 +157,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     currentSettings.systemPrompt || DEFAULT_SYSTEM_PROMPT
   );
   const [showPromptEditor, setShowPromptEditor] = useState(false);
+  const [ttsProvider, setTtsProvider] = useState<'browser' | 'replicate'>(
+    currentSettings.ttsProvider || 'browser'
+  );
+  const [replicateApiKey, setReplicateApiKey] = useState(
+    currentSettings.replicateApiKey || ''
+  );
+  const [replicateTTSModel, setReplicateTTSModel] = useState<'turbo' | 'hd'>(
+    currentSettings.replicateTTSModel || 'turbo'
+  );
 
   useEffect(() => {
     setProvider(currentSettings.provider);
@@ -161,6 +173,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setEndpoint(currentSettings.endpoint);
     setModel(currentSettings.model);
     setSystemPrompt(currentSettings.systemPrompt || DEFAULT_SYSTEM_PROMPT);
+    setTtsProvider(currentSettings.ttsProvider || 'browser');
+    setReplicateApiKey(currentSettings.replicateApiKey || '');
+    setReplicateTTSModel(currentSettings.replicateTTSModel || 'turbo');
   }, [currentSettings]);
 
   const selectedProvider = AI_PROVIDERS.find(p => p.id === provider);
@@ -184,6 +199,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       endpoint,
       model: finalModel,
       systemPrompt,
+      ttsProvider,
+      replicateApiKey,
+      replicateTTSModel,
     });
     onClose();
   };
@@ -347,6 +365,94 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* TTS Settings */}
+          <div className="border-t pt-6">
+            <h3 className="font-medium text-gray-900 mb-3">🔊 语音合成设置</h3>
+            <p className="text-sm text-gray-500 mb-4">选择AI说话的声音来源</p>
+
+            <div className="space-y-4">
+              {/* TTS Provider Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  语音服务商
+                </label>
+                <select
+                  value={ttsProvider}
+                  onChange={(e) => setTtsProvider(e.target.value as 'browser' | 'replicate')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="browser">浏览器自带 (免费)</option>
+                  <option value="replicate">Replicate (高质量)</option>
+                </select>
+              </div>
+
+              {/* Replicate TTS Settings */}
+              {ttsProvider === 'replicate' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Replicate API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={replicateApiKey}
+                      onChange={(e) => setReplicateApiKey(e.target.value)}
+                      placeholder="输入你的 Replicate API Key"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      你的API Key会保存在浏览器本地，不会上传到服务器
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      语音质量
+                    </label>
+                    <select
+                      value={replicateTTSModel}
+                      onChange={(e) => setReplicateTTSModel(e.target.value as 'turbo' | 'hd')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="turbo">Turbo (快速，低延迟)</option>
+                      <option value="hd">HD (高质量，自然)</option>
+                    </select>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-xs text-yellow-800">
+                      <strong>💰 费用说明：</strong>Replicate TTS 按使用量计费，
+                      大约每次生成 $0.01-0.02。Turbo模式更快更便宜，HD模式声音更自然。
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-2">
+                      <strong>🔑 如何获取 Replicate API Key：</strong>
+                    </p>
+                    <ol className="text-xs text-gray-600 space-y-1 ml-4 list-decimal">
+                      <li>访问 <a href="https://replicate.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Replicate.com</a></li>
+                      <li>注册/登录账号</li>
+                      <li>进入 Account Settings → API Tokens</li>
+                      <li>创建新的 API Token 并复制</li>
+                    </ol>
+                  </div>
+                </>
+              )}
+
+              {/* Browser TTS Info */}
+              {ttsProvider === 'browser' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800">
+                    <strong>ℹ️ 浏览器自带语音：</strong>完全免费，无需API Key。
+                    使用浏览器内置的语音合成引擎，质量取决于你的操作系统和浏览器。
+                    Chrome/Edge 通常有较好的英语语音。
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* How to get API Key */}

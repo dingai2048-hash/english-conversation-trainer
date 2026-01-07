@@ -15,12 +15,14 @@ describe('SettingsService', () => {
     it('should return default settings when no settings are stored', () => {
       const settings = SettingsService.getSettings();
       
-      expect(settings).toEqual({
-        provider: 'mock',
-        apiKey: '',
-        endpoint: '',
-        model: 'mock',
-      });
+      expect(settings.provider).toBe('mock');
+      expect(settings.apiKey).toBe('');
+      expect(settings.endpoint).toBe('');
+      expect(settings.model).toBe('mock');
+      expect(settings.ttsProvider).toBe('browser');
+      expect(settings.replicateApiKey).toBe('');
+      expect(settings.replicateTTSModel).toBe('turbo');
+      expect(settings.systemPrompt).toBeTruthy(); // Has default prompt
     });
 
     it('should return stored settings when available', () => {
@@ -41,12 +43,14 @@ describe('SettingsService', () => {
       localStorage.setItem('english-trainer-ai-settings', 'invalid-json');
 
       const settings = SettingsService.getSettings();
-      expect(settings).toEqual({
-        provider: 'mock',
-        apiKey: '',
-        endpoint: '',
-        model: 'mock',
-      });
+      expect(settings.provider).toBe('mock');
+      expect(settings.apiKey).toBe('');
+      expect(settings.endpoint).toBe('');
+      expect(settings.model).toBe('mock');
+      expect(settings.ttsProvider).toBe('browser');
+      expect(settings.replicateApiKey).toBe('');
+      expect(settings.replicateTTSModel).toBe('turbo');
+      expect(settings.systemPrompt).toBeTruthy();
     });
   });
 

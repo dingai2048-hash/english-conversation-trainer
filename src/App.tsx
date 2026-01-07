@@ -14,12 +14,13 @@ import { SettingsModal, AISettings } from './components/SettingsModal';
 import { SpeechRecognitionService } from './services/SpeechRecognitionService';
 import { AIConversationService } from './services/AIConversationService';
 import { SpeechSynthesisService } from './services/SpeechSynthesisService';
+import { ReplicateTTSService } from './services/ReplicateTTSService';
 import { SettingsService } from './services/SettingsService';
 
 // 初始化服务
 const speechService = new SpeechRecognitionService();
 let aiService: AIConversationService;
-const ttsService = new SpeechSynthesisService();
+let ttsService: SpeechSynthesisService | ReplicateTTSService;
 
 // 初始化AI服务
 const initializeAIService = (settings: AISettings) => {
@@ -38,9 +39,22 @@ const initializeAIService = (settings: AISettings) => {
   }
 };
 
-// 从本地存储加载设置并初始化AI服务
+// 初始化TTS服务
+const initializeTTSService = (settings: AISettings): SpeechSynthesisService | ReplicateTTSService => {
+  if (settings.ttsProvider === 'replicate' && settings.replicateApiKey) {
+    return new ReplicateTTSService({
+      apiKey: settings.replicateApiKey,
+      model: settings.replicateTTSModel || 'turbo',
+    });
+  } else {
+    return new SpeechSynthesisService();
+  }
+};
+
+// 从本地存储加载设置并初始化服务
 const settings = SettingsService.getSettings();
 aiService = initializeAIService(settings);
+ttsService = initializeTTSService(settings);
 
 function AppContent() {
   const {
@@ -76,6 +90,9 @@ function AppContent() {
     
     // 重新初始化AI服务
     aiService = initializeAIService(newSettings);
+    
+    // 重新初始化TTS服务
+    ttsService = initializeTTSService(newSettings);
     
     // 显示成功消息
     alert('设置已保存！');

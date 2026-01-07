@@ -200,6 +200,64 @@ API Key: your-custom-key
 - 🔐 使用完毕后可以清除设置
 - 🔐 不要在公共设备上保存API Key
 
+## 🔊 语音合成 (TTS) 配置
+
+### 浏览器自带 TTS（默认）
+**特点**:
+- ✅ 完全免费
+- ✅ 无需配置
+- ✅ 即时响应
+- ✅ 支持离线
+- ⚠️ 质量取决于操作系统
+
+**使用场景**:
+- 日常练习
+- 免费使用
+- 离线环境
+
+**配置**:
+- 默认启用，无需配置
+
+---
+
+### Replicate TTS（高质量）
+**特点**:
+- ✅ 高质量语音
+- ✅ 非常自然
+- ✅ 表达丰富
+- 💰 按使用量付费
+- ⚠️ 需要网络连接
+- ⚠️ 有1-3秒延迟
+
+**支持的模型**:
+- `Turbo` - 快速，低延迟（推荐）
+- `HD` - 高质量，更自然
+
+**如何获取API Key**:
+
+1. 访问 [Replicate.com](https://replicate.com)
+2. 注册/登录账号
+3. 进入 **Account Settings** → **API Tokens**
+4. 点击 **Create Token** 创建新的 API Token
+5. 复制生成的 Token（格式：`r8_xxxxxxxxxxxxx`）
+6. 在应用设置的"语音合成设置"中配置
+
+**费用**:
+- Turbo模式: ~$0.01/次生成
+- HD模式: ~$0.02/次生成
+- 每天30分钟练习约: $0.20-0.40
+
+**配置示例**:
+```
+语音服务商: Replicate (高质量)
+Replicate API Key: r8_xxxxxxxxxxxxx
+语音质量: Turbo (快速，低延迟)
+```
+
+**详细指南**: 查看 [REPLICATE_TTS_GUIDE.md](./REPLICATE_TTS_GUIDE.md)
+
+---
+
 ## 💰 费用对比
 
 | 服务商 | 费用 | 特点 |

@@ -94,6 +94,9 @@ export class SettingsService {
       endpoint: '',
       model: 'mock',
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
+      ttsProvider: 'browser',
+      replicateApiKey: '',
+      replicateTTSModel: 'turbo',
     };
   }
 

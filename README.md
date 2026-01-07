@@ -6,11 +6,12 @@
 
 - 🎤 **语音识别**: 使用Web Speech API实时识别英语语音
 - 🐨 **AI考拉助手**: 友好的考拉角色提供对话练习
-- 🔊 **语音对话**: AI会用英语"说话"回复你（TTS语音合成）
+- 🔊 **语音对话**: AI会用英语"说话"回复你（支持浏览器TTS和Replicate高质量TTS）
 - 💬 **智能对话**: AI驱动的自然对话回复
 - 🌏 **中英翻译**: 可选的中文翻译辅助理解
+- ⚙️ **灵活配置**: 支持多种AI服务商和语音合成选项
 - 📱 **响应式设计**: 支持桌面和移动设备
-- ✅ **全面测试**: 204个测试用例，覆盖率77.87%
+- ✅ **全面测试**: 220个测试用例，覆盖率77.87%
 
 ## 🚀 快速开始
 
@@ -98,7 +99,7 @@ src/
 
 ### 测试统计
 
-- ✅ 204个测试全部通过
+- ✅ 220个测试全部通过
 - 📊 组件覆盖率: 100%
 - 📊 服务覆盖率: 94.85%
 - 📊 总体覆盖率: 77.87%
@@ -112,10 +113,16 @@ src/
 - ❌ Firefox (不支持Web Speech API语音识别)
 
 ### 语音合成
-- ✅ Chrome (推荐)
-- ✅ Edge (推荐)
-- ✅ Safari (支持)
-- ✅ Firefox (支持)
+- ✅ Chrome (推荐，浏览器TTS)
+- ✅ Edge (推荐，浏览器TTS)
+- ✅ Safari (支持，浏览器TTS)
+- ✅ Firefox (支持，浏览器TTS)
+- ✅ 所有现代浏览器 (使用Replicate TTS，需要API Key)
+
+### 推荐配置
+- **最佳体验**: Chrome/Edge + Replicate TTS (高质量语音)
+- **免费使用**: Chrome/Edge + 浏览器TTS
+- **移动设备**: Safari/Chrome + 浏览器TTS
 
 ## 🔧 配置
 
@@ -141,9 +148,14 @@ src/
    - 自定义API
 3. **输入API Key**
 4. **选择模型**
-5. **保存设置**
+5. **配置语音合成** (可选):
+   - 浏览器自带 (免费)
+   - Replicate TTS (高质量，付费)
+6. **保存设置**
 
-详细配置指南请查看 [API_SETUP_GUIDE.md](./API_SETUP_GUIDE.md)
+详细配置指南请查看：
+- [API_SETUP_GUIDE.md](./API_SETUP_GUIDE.md) - AI API配置
+- [REPLICATE_TTS_GUIDE.md](./REPLICATE_TTS_GUIDE.md) - Replicate TTS配置
 
 ### 支持的AI服务
 
