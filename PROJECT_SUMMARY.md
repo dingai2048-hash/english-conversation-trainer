@@ -32,14 +32,14 @@
 ## 📊 测试统计
 
 ### 测试数量
-- **总测试数**: 204个测试
-- **测试套件**: 21个测试套件
+- **总测试数**: 220个测试
+- **测试套件**: 23个测试套件
 - **测试结果**: ✅ 100%通过
 
 ### 测试类型分布
-- **单元测试**: ~120个
-- **属性测试**: ~50个 (每个运行50-100次迭代)
-- **集成测试**: ~27个
+- **单元测试**: ~130个
+- **属性测试**: ~60个 (每个运行50-100次迭代)
+- **集成测试**: ~30个
 
 ### 代码覆盖率
 ```
@@ -57,12 +57,15 @@ All files                     |   77.87 |    86.11 |   92.15 |   77.48 |
 
 ### 核心功能
 1. ✅ **语音识别**: Web Speech API集成，支持实时语音转文字，持续监听模式
-2. ✅ **AI对话**: 智能对话系统，支持Mock和真实API模式
-3. ✅ **语音合成**: AI会用英语"说话"回复（TTS文字转语音）
+2. ✅ **AI对话**: 智能对话系统，支持Mock和真实API模式，支持多种AI服务商
+3. ✅ **语音合成**: AI会用英语"说话"回复，支持浏览器TTS和Replicate高质量TTS
 4. ✅ **考拉角色**: 动画反馈（监听/思考/说话状态）
 5. ✅ **对话显示**: 消息列表，自动滚动，时间戳
 6. ✅ **翻译功能**: 中英文翻译切换
 7. ✅ **响应式布局**: 适配桌面和移动设备
+8. ✅ **AI配置系统**: 支持6种AI服务商（OpenAI、豆包、Azure、Claude等）
+9. ✅ **自定义Prompt**: 可自定义AI对话风格和性格
+10. ✅ **TTS选择**: 可选择浏览器TTS（免费）或Replicate TTS（高质量）
 
 ### 技术特性
 1. ✅ **TypeScript**: 完整的类型定义
@@ -77,17 +80,20 @@ All files                     |   77.87 |    86.11 |   92.15 |   77.48 |
 ```
 english-conversation-trainer/
 ├── src/
-│   ├── components/              # UI组件 (4个组件)
+│   ├── components/              # UI组件 (5个组件)
 │   │   ├── KoalaCharacter.tsx
 │   │   ├── MicButton.tsx
 │   │   ├── ConversationDisplay.tsx
-│   │   └── TranslationToggle.tsx
+│   │   ├── TranslationToggle.tsx
+│   │   └── SettingsModal.tsx          # 新增：设置界面
 │   ├── context/                 # 状态管理
 │   │   └── AppContext.tsx
-│   ├── services/                # 服务层 (3个服务)
+│   ├── services/                # 服务层 (5个服务)
 │   │   ├── SpeechRecognitionService.ts
-│   │   ├── SpeechSynthesisService.ts  # 新增：语音合成
-│   │   └── AIConversationService.ts
+│   │   ├── SpeechSynthesisService.ts  # 浏览器TTS
+│   │   ├── ReplicateTTSService.ts     # 新增：Replicate高质量TTS
+│   │   ├── AIConversationService.ts
+│   │   └── SettingsService.ts         # 新增：设置管理
 │   ├── types/                   # 类型定义
 │   │   └── index.ts
 │   ├── integration/             # 集成测试 (5个测试文件)
@@ -107,6 +113,12 @@ english-conversation-trainer/
 ├── package.json
 ├── README.md                    # 使用说明
 ├── PROJECT_SUMMARY.md          # 本文件
+├── API_SETUP_GUIDE.md          # 新增：API配置指南
+├── SETTINGS_FEATURE.md         # 新增：设置功能说明
+├── PROMPT_GUIDE.md             # 新增：Prompt编写指南
+├── REPLICATE_TTS_GUIDE.md      # 新增：Replicate TTS指南
+├── QUICK_START_REPLICATE.md    # 新增：Replicate快速开始
+├── CHANGELOG.md                # 新增：更新日志
 └── UPDATES.md                  # 更新说明
 ```
 
@@ -217,14 +229,17 @@ npm run build
 ## 🏆 项目成就
 
 - ✅ 完成所有17个任务
-- ✅ 204个测试100%通过
+- ✅ 220个测试100%通过
 - ✅ 代码覆盖率77.87%
 - ✅ 组件覆盖率100%
 - ✅ 零TypeScript错误
 - ✅ 零ESLint警告
-- ✅ 完整的文档
+- ✅ 完整的文档（8个文档文件）
 - ✅ 可运行的应用
 - ✅ 语音对话功能（语音识别 + 语音合成）
+- ✅ 多AI服务商支持（6种）
+- ✅ 高质量TTS支持（Replicate）
+- ✅ 自定义AI对话风格
 
 ## 📞 技术支持
 
