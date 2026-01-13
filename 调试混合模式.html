@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>混合模式调试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        .warning {
+            background: rgba(255, 152, 0, 0.3);
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+        }
+        .log-error {
+            border-left-color: #f44336;
+            color: #ffcdd2;
+        }
+        .log-success {
+            border-left-color: #4caf50;
+            color: #c8e6c9;
+        }
+        .log-info {
+            border-left-color: #2196f3;
+            color: #bbdefb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 混合模式调试工具</h1>
+        
+        <div class="section">
+            <h2>1. 环境检查</h2>
+            <div id="env-check"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. 测试录音</h2>
+            <button id="test-record" onclick="testRecording()">开始测试录音</button>
+            <button id="stop-record" onclick="stopRecording()" disabled>停止录音</button>
+            <div id="record-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. 测试 Whisper API</h2>
+            <input type="text" id="api-key" placeholder="输入 OpenAI API Key" style="width: 100%; padding: 10px; border-radius: 5px; border: none; margin-bottom: 10px;">
+            <button onclick="testWhisperAPI()">测试 Whisper API</button>
+            <div id="whisper-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. 测试浏览器 STT</h2>
+            <button onclick="testBrowserSTT()">测试浏览器 STT</button>
+            <div id="stt-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>📋 调试日志</h2>
+            <button onclick="clearLog()">清空日志</button>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let mediaStream = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new 

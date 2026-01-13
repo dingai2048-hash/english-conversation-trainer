@@ -62,7 +62,16 @@ describe('SpeechSynthesisService', () => {
   describe('speak', () => {
     it('should call speechSynthesis.speak with correct parameters', async () => {
       const text = 'Hello world';
+      
+      // Mock getVoices to return immediately (no need to wait)
+      (global.speechSynthesis.getVoices as jest.Mock).mockReturnValue([
+        { lang: 'en-US', name: 'Test Voice', localService: true }
+      ]);
+      
       const speakPromise = service.speak(text);
+
+      // Wait a tick for async operations
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // Simulate successful speech
       const utterance = (global.speechSynthesis.speak as jest.Mock).mock.calls[0][0];
@@ -77,7 +86,16 @@ describe('SpeechSynthesisService', () => {
 
     it('should use English language by default', async () => {
       const text = 'Hello';
+      
+      // Mock getVoices to return immediately
+      (global.speechSynthesis.getVoices as jest.Mock).mockReturnValue([
+        { lang: 'en-US', name: 'Test Voice', localService: true }
+      ]);
+      
       const speakPromise = service.speak(text);
+
+      // Wait a tick for async operations
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       const utterance = (global.speechSynthesis.speak as jest.Mock).mock.calls[0][0];
       expect(utterance.lang).toBe('en-US');
@@ -90,7 +108,16 @@ describe('SpeechSynthesisService', () => {
 
     it('should handle speech errors', async () => {
       const text = 'Hello';
+      
+      // Mock getVoices to return immediately
+      (global.speechSynthesis.getVoices as jest.Mock).mockReturnValue([
+        { lang: 'en-US', name: 'Test Voice', localService: true }
+      ]);
+      
       const speakPromise = service.speak(text);
+
+      // Wait a tick for async operations
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       const utterance = (global.speechSynthesis.speak as jest.Mock).mock.calls[0][0];
       if (utterance.onerror) {

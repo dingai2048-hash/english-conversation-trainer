@@ -1,0 +1,36 @@
+<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="250" cy="250" r="240" fill="#E0F2FE" stroke="#93C5FD" stroke-width="4"/>
+  
+  <!-- Koala face -->
+  <ellipse cx="250" cy="250" rx="150" ry="160" fill="#9CA3AF"/>
+  
+  <!-- Ears -->
+  <ellipse cx="150" cy="150" rx="60" ry="70" fill="#9CA3AF"/>
+  <ellipse cx="350" cy="150" rx="60" ry="70" fill="#9CA3AF"/>
+  <ellipse cx="150" cy="150" rx="35" ry="45" fill="#6B7280"/>
+  <ellipse cx="350" cy="150" rx="35" ry="45" fill="#6B7280"/>
+  
+  <!-- Eyes -->
+  <ellipse cx="200" cy="230" rx="30" ry="35" fill="#1F2937"/>
+  <ellipse cx="300" cy="230" rx="30" ry="35" fill="#1F2937"/>
+  <circle cx="210" cy="220" r="10" fill="white"/>
+  <circle cx="310" cy="220" r="10" fill="white"/>
+  
+  <!-- Nose -->
+  <ellipse cx="250" cy="280" rx="25" ry="20" fill="#1F2937"/>
+  
+  <!-- Mouth -->
+  <path d="M 220 300 Q 250 320 280 300" stroke="#1F2937" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Text -->
+  <text x="250" y="420" font-family="Arial, sans-serif" font-size="24" fill="#3B82F6" text-anchor="middle" font-weight="bold">
+    上传你的考拉图片
+  </text>
+  <text x="250" y="450" font-family="Arial, sans-serif" font-size="16" fill="#6B7280" text-anchor="middle">
+    将图片命名为 koala.png
+  </text>
+  <text x="250" cy="470" font-family="Arial, sans-serif" font-size="16" fill="#6B7280" text-anchor="middle">
+    放到 public 文件夹
+  </text>
+</svg>

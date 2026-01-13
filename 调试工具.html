@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试工具 - 检查配置和 API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        .info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+            color: #0c5460;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .log {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .log-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .log-success {
+            color: #28a745;
+        }
+        .log-info {
+            color: #17a2b8;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 调试工具</h1>
+        <p>检查配置和测试 API 连接</p>
+
+        <!-- 步骤 1: 检查配置 -->
+        <h2>步骤 1: 检查本地配置</h2>
+        <div id="config-check" class="section">
+            <button onclick="checkConfig()">🔍 检查配置</button>
+            <div id="config-result"></div>
+        </div>
+
+        <!-- 步骤 2: 测试 OpenAI API -->
+        <h2>步骤 2: 测试 OpenAI API</h2>
+        <div class="section">
+            <p>输入测试消息：</p>
+            <input type="text" id="test-message" value="Hello, how are you?" placeholder="输入测试消息">
+            <button onclick="testOpenAI()">🚀 测试 OpenAI API</button>
+            <button onclick="testOpenAITTS()">🔊 测试 OpenAI TTS</button>
+            <div id="api-result"></div>
+        </div>
+
+        <!-- 步骤 3: 查看详细日志 -->
+        <h2>步骤 3: 详细日志</h2>
+        <div class="section">
+            <button onclick="clearLog()">🗑️ 清除日志</button>
+            <div id="log" class="log"></div>
+        </div>
+
+        <!-- 步骤 4: 手动测试 -->
+        <h2>步骤 4: 手动测试 API</h2>
+        <div class="section">
+            <p>API Key:</p>
+            <input type="text" id="manual-api-key" placeholder="输入 API Key">
+            <p>测试消息:</p>
+            <textarea id="manual-message" placeholder="输入测试消息">Hello, how are you?</textarea>
+            <button onclick="manualTest()">🧪 手动测试</button>
+            <div id="manual-result"></div>
+        </div>
+    </div>
+
+    <script>
+        let logEntries = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            logEntries.push({ message: entry, type });
+            updateLog();
+            console.log(entry);
+        }
+
+        function updateLog() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = logEntries.map(entry => 
+                `<div class="log-entry log-${entry.type}">${entry.message}</div>`
+            ).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            logEntries = [];
+            updateLog();
+        }
+
+        function checkConfig() {
+            log('开始检查配置...', 'info');
+            const resultDiv = document.getElementById('config-result');
+            
+            try {
+                const stored = localStorage.getItem('english-trainer-ai-settings');
+                
+                if (!stored) {
+                    resultDiv.innerHTML = `
+                        <div class="section error">
+                            <strong>❌ 未找到配置</strong><br>
+                            请先运行自动配置页面或手动配置。
+                        </div>
+                    `;
+                    log('未找到配置', 'error');
+                    return;
+                }
+
+                const config = JSON.parse(stored);
+                log('配置已找到', 'success');
+                
+                let html = '<div class="section success"><strong>✅ 配置已找到</strong><br><br>';
+                html += `<strong>AI 服务商:</strong> ${config.provider}<br>`;
+                html += `<strong>模型:</strong> ${config.model}<br>`;
+                html += `<strong>端点:</strong> ${config.endpoint}<br>`;
+                html += `<strong>API Key:</strong> ${config.apiKey ? config.apiKey.substring(0, 20) + '...' : '未设置'}<br>`;
+                html += `<strong>语音服务:</strong> ${config.ttsProvider}<br>`;
+                
+                if (config.ttsProvider === 'openai') {
+                    html += `<strong>TTS 音色:</strong> ${config.openaiTTSVoice}<br>`;
+                    html += `<strong>TTS 质量:</strong> ${config.openaiTTSModel}<br>`;
+                    html += `<strong>TTS 语速:</strong> ${config.openaiTTSSpeed}x<br>`;
+                }
+                
+                html += '</div>';
+                
+                // 检查必要字段
+                if (!config.apiKey || config.apiKey === 'mock') {
+                    html += '<div class="section error"><strong>⚠️ API Key 未设置或为 mock</strong></div>';
+                    log('API Key 未设置', 'error');
+                } else {
+                    log('API Key 已设置: ' + config.apiKey.substring(0, 20) + '...', 'success');
+                }
+                
+                if (config.provider === 'openai' && !config.endpoint) {
+                    html += '<div class="section error"><strong>⚠️ API 端点未设置</strong></div>';
+                    log('API 端点未设置', 'error');
+                } else {
+                    log('API 端点: ' + config.endpoint, 'success');
+                }
+                
+                resultDiv.innerHTML = html;
+                
+                // 保存到全局变量供后续测试使用
+                window.currentConfig = config;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="section error">
+                        <strong>❌ 读取配置失败</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+                log('读取配置失败: ' + error.message, 'error');
+            }
+        }
+
+        async function testOpenAI() {
+            log('开始测试 OpenAI API...', 'info');
+            const resultDiv = document.getElementById('api-result');
+            const message = document.getElementById('test-message').value;
+            
+            if (!window.currentConfig) {
+                resultDiv.innerHTML = '<div class="section error">请先检查配置</div>';
+                log('请先检查配置', 'error');
+                return;
+            }
+            
+            const config = window.currentConfig;
+            
+            if (!config.apiKey || config.apiKey === 'mock') {
+                resultDiv.innerHTML = '<div class="section error">API Key 未设置</div>';
+                log('API Key 未设置', 'error');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="section info">⏳ 正在调用 API...</div>';
+            log('发送请求到: ' + config.endpoint, 'info');
+            log('使用模型: ' + config.model, 'info');
+            log('消息: ' + message, 'info');
+            
+            try {
+                const requestBody = {
+                    model: config.model,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a helpful assistant.'
+                        },
+                        {
+                            role: 'user',
+                            content: message
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 150
+                };
+                
+                log('请求体: ' + JSON.stringify(requestBody, null, 2), 'info');
+                
+                const response = await fetch(config.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                log('响应状态: ' + response.status, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log('错误响应: ' + errorText, 'error');
+                    resultDiv.innerHTML = `
+                        <div class="section error">
+                            <strong>❌ API 调用失败</strong><br>
+                            状态码: ${response.status}<br>
+                            错误: ${errorText}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const data = await response.json();
+                log('响应数据: ' + JSON.stringify(data, null, 2), 'success');
+                
+                if (data.choices && data.choices.length > 0) {
+                    const reply = data.choices[0].message.content;
+                    log('AI 回复: ' + reply, 'success');
+                    resultDiv.innerHTML = `
+                        <div class="section success">
+                            <strong>✅ API 调用成功！</strong><br><br>
+                            <strong>AI 回复:</strong><br>
+                            ${reply}
+                        </div>
+                    `;
+                } else {
+                    log('响应中没有 choices', 'error');
+                    resultDiv.innerHTML = '<div class="section error">响应格式错误</div>';
+                }
+                
+            } catch (error) {
+                log('API 调用异常: ' + error.message, 'error');
+                resultDiv.innerHTML = `
+                    <div class="section error">
+                        <strong>❌ API 调用异常</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testOpenAITTS() {
+            log('开始测试 OpenAI TTS...', 'info');
+            const resultDiv = document.getElementById('api-result');
+            const message = document.getElementById('test-message').value;
+            
+            if (!window.currentConfig) {
+                resultDiv.innerHTML = '<div class="section error">请先检查配置</div>';
+                log('请先检查配置', 'error');
+                return;
+            }
+            
+            const config = window.currentConfig;
+            
+            if (!config.apiKey || config.apiKey === 'mock') {
+                resultDiv.innerHTML = '<div class="section error">API Key 未设置</div>';
+                log('API Key 未设置', 'error');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="section info">⏳ 正在生成语音...</div>';
+            log('发送 TTS 请求', 'info');
+            log('文本: ' + message, 'info');
+            log('音色: ' + (config.openaiTTSVoice || 'nova'), 'info');
+            log('模型: ' + (config.openaiTTSModel || 'tts-1-hd'), 'info');
+            
+            try {
+                const response = await fetch('https://api.openai.com/v1/audio/speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: config.openaiTTSModel || 'tts-1-hd',
+                        input: message,
+                        voice: config.openaiTTSVoice || 'nova',
+                        speed: config.openaiTTSSpeed || 0.9
+                    })
+                });
+                
+                log('TTS 响应状态: ' + response.status, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log('TTS 错误: ' + errorText, 'error');
+                    resultDiv.innerHTML = `
+                        <div class="section error">
+                            <strong>❌ TTS 调用失败</strong><br>
+                            状态码: ${response.status}<br>
+                            错误: ${errorText}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                
+                log('TTS 音频生成成功，大小: ' + audioBlob.size + ' bytes', 'success');
+                
+                audio.onended = () => {
+                    log('音频播放完成', 'success');
+                    URL.revokeObjectURL(audioUrl);
+                };
+                
+                audio.onerror = (error) => {
+                    log('音频播放失败: ' + error, 'error');
+                };
+                
+                await audio.play();
+                log('开始播放音频', 'success');
+                
+                resultDiv.innerHTML = `
+                    <div class="section success">
+                        <strong>✅ TTS 调用成功！</strong><br>
+                        音频已生成并播放<br>
+                        大小: ${audioBlob.size} bytes
+                    </div>
+                `;
+                
+            } catch (error) {
+                log('TTS 调用异常: ' + error.message, 'error');
+                resultDiv.innerHTML = `
+                    <div class="section error">
+                        <strong>❌ TTS 调用异常</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function manualTest() {
+            log('开始手动测试...', 'info');
+            const resultDiv = document.getElementById('manual-result');
+            const apiKey = document.getElementById('manual-api-key').value;
+            const message = document.getElementById('manual-message').value;
+            
+            if (!apiKey) {
+                resultDiv.innerHTML = '<div class="section error">请输入 API Key</div>';
+                log('API Key 为空', 'error');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="section info">⏳ 正在测试...</div>';
+            log('手动测试 API Key: ' + apiKey.substring(0, 20) + '...', 'info');
+            
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o',
+                        messages: [
+                            { role: 'system', content: 'You are a helpful assistant.' },
+                            { role: 'user', content: message }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 150
+                    })
+                });
+                
+                log('手动测试响应状态: ' + response.status, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log('手动测试错误: ' + errorText, 'error');
+                    resultDiv.innerHTML = `
+                        <div class="section error">
+                            <strong>❌ 测试失败</strong><br>
+                            状态码: ${response.status}<br>
+                            <pre>${errorText}</pre>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const data = await response.json();
+                const reply = data.choices[0].message.content;
+                log('手动测试成功，回复: ' + reply, 'success');
+                
+                resultDiv.innerHTML = `
+                    <div class="section success">
+                        <strong>✅ 测试成功！</strong><br><br>
+                        <strong>AI 回复:</strong><br>
+                        ${reply}<br><br>
+                        <strong>完整响应:</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                log('手动测试异常: ' + error.message, 'error');
+                resultDiv.innerHTML = `
+                    <div class="section error">
+                        <strong>❌ 测试异常</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载时自动检查配置
+        window.onload = function() {
+            log('页面加载完成', 'info');
+            checkConfig();
+        };
+    </script>
+</body>
+</html>

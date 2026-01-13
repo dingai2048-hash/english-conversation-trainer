@@ -15,6 +15,7 @@ export const MicButton: React.FC<MicButtonProps> = ({
   isRecording,
   onToggleRecording,
   disabled,
+  isContinuousMode = false,
 }) => {
   return (
     <div className="flex flex-col items-center justify-center p-4">
@@ -31,6 +32,8 @@ export const MicButton: React.FC<MicButtonProps> = ({
               ? 'bg-red-500 hover:bg-red-600 focus:ring-red-300 scale-110 animate-pulse'
               : disabled
               ? 'bg-gray-300 cursor-not-allowed'
+              : isContinuousMode
+              ? 'bg-green-500 hover:bg-green-600 focus:ring-green-300 hover:scale-105'
               : 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-300 hover:scale-105'
           }
           ${disabled ? '' : 'shadow-lg hover:shadow-xl'}
@@ -66,6 +69,11 @@ export const MicButton: React.FC<MicButtonProps> = ({
         {isRecording && (
           <div className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping opacity-75"></div>
         )}
+        
+        {/* Continuous mode indicator ring */}
+        {isContinuousMode && !isRecording && !disabled && (
+          <div className="absolute inset-0 rounded-full border-4 border-green-300 opacity-50"></div>
+        )}
       </button>
 
       {/* Status text */}
@@ -73,11 +81,14 @@ export const MicButton: React.FC<MicButtonProps> = ({
         <p
           className={`
             text-sm font-medium transition-colors duration-300
-            ${isRecording ? 'text-red-600' : disabled ? 'text-gray-400' : 'text-gray-600'}
+            ${isRecording ? 'text-red-600' : disabled ? 'text-gray-400' : isContinuousMode ? 'text-green-600' : 'text-gray-600'}
           `}
         >
-          {isRecording ? 'Recording...' : disabled ? 'Processing...' : 'Tap to speak'}
+          {isRecording ? 'Recording...' : disabled ? 'Processing...' : isContinuousMode ? 'Continuous Mode' : 'Tap to speak'}
         </p>
+        {isContinuousMode && !isRecording && !disabled && (
+          <p className="text-xs text-gray-500 mt-1">自动录音已启用</p>
+        )}
       </div>
     </div>
   );

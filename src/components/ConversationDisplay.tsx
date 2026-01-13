@@ -57,19 +57,7 @@ export const ConversationDisplay: React.FC<ConversationDisplayProps> = ({
               </p>
             )}
 
-            {/* Pronunciation Feedback Button (only for user messages) */}
-            {message.role === 'user' && onRequestFeedback && (
-              <button
-                onClick={() => onRequestFeedback(message.id)}
-                className="mt-2 px-3 py-1 text-xs bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full transition-colors flex items-center space-x-1"
-                title="请AI评价我的发音"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>评价发音</span>
-              </button>
-            )}
+            {/* Pronunciation Feedback Button removed - AI now corrects automatically */}
 
             {/* Timestamp */}
             <p className="text-xs mt-2 opacity-60">

@@ -86,6 +86,8 @@ class MockSpeechRecognition {
 describe('SpeechRecognitionService', () => {
   let mockRecognition: MockSpeechRecognition;
   let originalSpeechRecognition: any;
+  let mockMediaRecorder: any;
+  let mockMediaStream: any;
 
   beforeEach(() => {
     // Create mock and store original
@@ -95,6 +97,27 @@ describe('SpeechRecognitionService', () => {
     // Set up mock
     (window as any).SpeechRecognition = jest.fn(() => mockRecognition);
     (window as any).webkitSpeechRecognition = jest.fn(() => mockRecognition);
+
+    // Mock MediaRecorder
+    mockMediaStream = {
+      getTracks: jest.fn(() => [{ stop: jest.fn() }]),
+    };
+
+    mockMediaRecorder = {
+      state: 'inactive',
+      ondataavailable: null,
+      start: jest.fn(),
+      stop: jest.fn(function(this: any) {
+        this.state = 'inactive';
+      }),
+    };
+
+    (global as any).MediaRecorder = jest.fn(() => mockMediaRecorder);
+
+    // Mock getUserMedia
+    (global.navigator as any).mediaDevices = {
+      getUserMedia: jest.fn().mockResolvedValue(mockMediaStream),
+    };
   });
 
   afterEach(() => {
@@ -105,6 +128,8 @@ describe('SpeechRecognitionService', () => {
       delete (window as any).SpeechRecognition;
     }
     delete (window as any).webkitSpeechRecognition;
+    delete (global as any).MediaRecorder;
+    delete (global.navigator as any).mediaDevices;
   });
 
   describe('Browser Support', () => {

@@ -94,9 +94,14 @@ export class SettingsService {
       endpoint: '',
       model: 'mock',
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
+      sttProvider: 'browser',
       ttsProvider: 'browser',
       replicateApiKey: '',
       replicateTTSModel: 'turbo',
+      azureSpeechKey: '',
+      azureSpeechRegion: 'eastus',
+      pronunciationEnabled: false,
+      userLevel: 'beginner',
     };
   }
 

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 修复配置 - OpenAI API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .problem {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .problem h2 {
+            color: #991b1b;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .problem p {
+            color: #7f1d1d;
+            line-height: 1.6;
+        }
+        
+        .solution {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .solution h2 {
+            color: #065f46;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .solution p {
+            color: #064e3b;
+            line-height: 1.6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        
+        .steps {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .steps h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .steps ol {
+            margin-left: 20px;
+            line-height: 2;
+            color: #666;
+        }
+        
+        .steps strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 修复配置</h1>
+        <p class="subtitle">将 Anthropic API 改为 OpenAI API</p>
+        
+        <div class="problem">
+            <h2>❌ 发现的问题</h2>
+            <p>
+                你的配置设置成了 <strong>Anthropic Claude API</strong>（<code>api.anthropic.com</code>），
+                但你提供的是 <strong>OpenAI API Key</strong>（<code>sk-proj-...</code>）。
+            </p>
+            <p style="margin-top: 10px;">
+                这导致 API 调用失败，出现 CORS 错误。
+            </p>
+        </div>
+        
+        <div class="solution">
+            <h2>✅ 解决方案</h2>
+            <p>
+                点击下面的按钮，自动将配置改为 <strong>OpenAI API</strong>。
+            </p>
+            <p style="margin-top: 10px;">
+                你的 API Key 会保留，只是改变 API 端点和模型。
+            </p>
+        </div>
+        
+        <button onclick="fixConfig()">🔧 立即修复配置</button>
+        
+        <div id="result" class="result"></div>
+        
+        <div class="steps">
+            <h3>📋 修复后的步骤</h3>
+            <ol>
+                <li><strong>刷新浏览器</strong>（Cmd + Shift + R）</li>
+                <li><strong>点击麦克风</strong></li>
+                <li><strong>说英语</strong>（例如："Hello, how are you?"）</li>
+                <li><strong>等待 AI 回复</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function fixConfig() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p>⏳ 正在修复配置...</p>';
+            
+            try {
+                // 读取当前配置
+                const settingsStr = localStorage.getItem('ai-conversation-settings');
+                
+                if (!settingsStr) {
+                    resultDiv.innerHTML = '<p class="error">❌ 未找到配置</p>';
+                    return;
+                }
+                
+                const settings = JSON.parse(settingsStr);
+                
+                // 显示当前配置
+                let html = '<h3>当前配置：</h3><pre>';
+                html += `提供商: ${settings.provider}\n`;
+                html += `端点: ${settings.endpoint}\n`;
+                html += `模型: ${settings.model}\n`;
+                html += `API Key: ${settings.apiKey ? settings.apiKey.substring(0, 20) + '...' : '未设置'}\n`;
+                html += '</pre>';
+                
+                // 修复配置
+                settings.provider = 'openai';
+                settings.endpoint = 'https://api.openai.com/v1/chat/completions';
+                settings.model = 'gpt-4o';
+                
+                // 保存配置
+                localStorage.setItem('ai-conversation-settings', JSON.stringify(settings));
+                
+                // 显示新配置
+                html += '<h3 style="margin-top: 20px;">✅ 修复后的配置：</h3><pre>';
+                html += `提供商: ${settings.provider}\n`;
+                html += `端点: ${settings.endpoint}\n`;
+                html += `模型: ${settings.model}\n`;
+                html += `API Key: ${settings.apiKey ? settings.apiKey.substring(0, 20) + '...' : '未设置'}\n`;
+                html += '</pre>';
+                
+                html += '<p class="success" style="margin-top: 20px;">✅ 配置已修复！</p>';
+                html += '<p style="margin-top: 10px; color: #666;">现在请：</p>';
+                html += '<ol style="margin-left: 20px; margin-top: 10px; color: #666; line-height: 1.8;">';
+                html += '<li>刷新浏览器（Cmd + Shift + R）</li>';
+                html += '<li>点击麦克风说话</li>';
+                html += '<li>等待 AI 回复</li>';
+                html += '</ol>';
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ 修复失败: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

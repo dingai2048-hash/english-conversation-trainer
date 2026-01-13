@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { APIKeyManager, SavedAPIKey } from '../services/APIKeyManager';
 
 export interface AIProvider {
   id: string;
@@ -27,6 +28,13 @@ export const AI_PROVIDERS: AIProvider[] = [
     endpoint: 'https://api.openai.com/v1/chat/completions',
     requiresApiKey: true,
     models: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo'],
+  },
+  {
+    id: 'replicate',
+    name: 'Replicate (Gemma 2)',
+    endpoint: 'https://api.replicate.com',
+    requiresApiKey: true,
+    models: ['meta/gemma-2-27b-it', 'meta/gemma-2-9b-it', 'meta/llama-2-70b-chat'],
   },
   {
     id: 'azure',
@@ -137,9 +145,18 @@ export interface AISettings {
   endpoint: string;
   model: string;
   systemPrompt?: string;
-  ttsProvider?: 'browser' | 'replicate';
+  sttProvider?: 'browser' | 'whisper'; // 语音识别提供商
+  ttsProvider?: 'browser' | 'replicate' | 'openai';
   replicateApiKey?: string;
   replicateTTSModel?: 'turbo' | 'hd';
+  openaiTTSVoice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+  openaiTTSModel?: 'tts-1' | 'tts-1-hd';
+  openaiTTSSpeed?: number;
+  azureSpeechKey?: string;
+  azureSpeechRegion?: string;
+  pronunciationEnabled?: boolean;
+  userLevel?: 'beginner' | 'intermediate' | 'advanced';
+  savedKeyId?: string; // ID of the saved key being used
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -157,7 +174,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     currentSettings.systemPrompt || DEFAULT_SYSTEM_PROMPT
   );
   const [showPromptEditor, setShowPromptEditor] = useState(false);
-  const [ttsProvider, setTtsProvider] = useState<'browser' | 'replicate'>(
+  const [sttProvider, setSttProvider] = useState<'browser' | 'whisper'>(
+    currentSettings.sttProvider || 'browser'
+  );
+  const [ttsProvider, setTtsProvider] = useState<'browser' | 'replicate' | 'openai'>(
     currentSettings.ttsProvider || 'browser'
   );
   const [replicateApiKey, setReplicateApiKey] = useState(
@@ -165,6 +185,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   );
   const [replicateTTSModel, setReplicateTTSModel] = useState<'turbo' | 'hd'>(
     currentSettings.replicateTTSModel || 'turbo'
+  );
+  const [openaiTTSVoice, setOpenaiTTSVoice] = useState<'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'>(
+    currentSettings.openaiTTSVoice || 'nova'
+  );
+  const [openaiTTSModel, setOpenaiTTSModel] = useState<'tts-1' | 'tts-1-hd'>(
+    currentSettings.openaiTTSModel || 'tts-1-hd'
+  );
+  const [openaiTTSSpeed, setOpenaiTTSSpeed] = useState<number>(
+    currentSettings.openaiTTSSpeed || 0.9
+  );
+  const [azureSpeechKey, setAzureSpeechKey] = useState(
+    currentSettings.azureSpeechKey || ''
+  );
+  const [azureSpeechRegion, setAzureSpeechRegion] = useState(
+    currentSettings.azureSpeechRegion || 'eastus'
+  );
+  const [pronunciationEnabled, setPronunciationEnabled] = useState(
+    currentSettings.pronunciationEnabled || false
+  );
+  const [userLevel, setUserLevel] = useState<'beginner' | 'intermediate' | 'advanced'>(
+    currentSettings.userLevel || 'beginner'
   );
 
   useEffect(() => {
@@ -176,6 +217,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTtsProvider(currentSettings.ttsProvider || 'browser');
     setReplicateApiKey(currentSettings.replicateApiKey || '');
     setReplicateTTSModel(currentSettings.replicateTTSModel || 'turbo');
+    setOpenaiTTSVoice(currentSettings.openaiTTSVoice || 'nova');
+    setOpenaiTTSModel(currentSettings.openaiTTSModel || 'tts-1-hd');
+    setOpenaiTTSSpeed(currentSettings.openaiTTSSpeed || 0.9);
+    setAzureSpeechKey(currentSettings.azureSpeechKey || '');
+    setAzureSpeechRegion(currentSettings.azureSpeechRegion || 'eastus');
+    setPronunciationEnabled(currentSettings.pronunciationEnabled || false);
+    setUserLevel(currentSettings.userLevel || 'beginner');
   }, [currentSettings]);
 
   const selectedProvider = AI_PROVIDERS.find(p => p.id === provider);
@@ -199,9 +247,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       endpoint,
       model: finalModel,
       systemPrompt,
+      sttProvider,
       ttsProvider,
       replicateApiKey,
       replicateTTSModel,
+      openaiTTSVoice,
+      openaiTTSModel,
+      openaiTTSSpeed,
+      azureSpeechKey,
+      azureSpeechRegion,
+      pronunciationEnabled,
+      userLevel,
     });
     onClose();
   };
@@ -244,11 +300,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 API Key
               </label>
               <input
-                type="password"
+                type="text"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="输入你的 API Key"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
               />
               <p className="text-xs text-gray-500 mt-1">
                 你的API Key会保存在浏览器本地，不会上传到服务器
@@ -317,6 +373,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• <strong>Mock模式</strong>: 无需API Key，用于测试</li>
               <li>• <strong>OpenAI</strong>: 需要OpenAI账号和API Key</li>
+              <li>• <strong>Replicate (Gemma 2)</strong>: 使用Gemma 2 27B等开源模型</li>
               <li>• <strong>豆包</strong>: 字节跳动的AI服务，支持中文</li>
               <li>• <strong>自定义</strong>: 支持任何兼容OpenAI格式的API</li>
             </ul>
@@ -367,6 +424,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
+          {/* STT Settings */}
+          <div className="border-t pt-6">
+            <h3 className="font-medium text-gray-900 mb-3">🎤 语音识别设置</h3>
+            <p className="text-sm text-gray-500 mb-4">选择语音转文字的服务</p>
+
+            <div className="space-y-4">
+              {/* STT Provider Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  识别服务商
+                </label>
+                <select
+                  value={sttProvider}
+                  onChange={(e) => setSttProvider(e.target.value as 'browser' | 'whisper')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="browser">浏览器自带 (免费，识别率较低)</option>
+                  <option value="whisper">OpenAI Whisper (推荐，识别率高)</option>
+                </select>
+              </div>
+
+              {/* Whisper Info */}
+              {sttProvider === 'whisper' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800">
+                    <strong>✨ OpenAI Whisper：</strong>业界顶尖的语音识别技术！
+                  </p>
+                  <ul className="text-xs text-blue-700 mt-2 space-y-1 ml-4 list-disc">
+                    <li>识别准确率极高，支持各种口音</li>
+                    <li>自动添加标点符号</li>
+                    <li>噪音环境下也能准确识别</li>
+                    <li>使用你的 OpenAI API Key（上方已配置）</li>
+                    <li>价格：$0.006/分钟（约 ¥0.04/分钟）</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Browser STT Info */}
+              {sttProvider === 'browser' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-xs text-yellow-800">
+                    <strong>⚠️ 浏览器自带识别：</strong>完全免费，但识别率较低。
+                  </p>
+                  <ul className="text-xs text-yellow-700 mt-2 space-y-1 ml-4 list-disc">
+                    <li>识别准确率一般，容易出错</li>
+                    <li>对口音敏感，非标准发音识别困难</li>
+                    <li>需要安静环境</li>
+                    <li>建议升级到 Whisper 获得更好体验</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* TTS Settings */}
           <div className="border-t pt-6">
             <h3 className="font-medium text-gray-900 mb-3">🔊 语音合成设置</h3>
@@ -380,13 +491,110 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </label>
                 <select
                   value={ttsProvider}
-                  onChange={(e) => setTtsProvider(e.target.value as 'browser' | 'replicate')}
+                  onChange={(e) => setTtsProvider(e.target.value as 'browser' | 'replicate' | 'openai')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="browser">浏览器自带 (免费)</option>
+                  <option value="openai">OpenAI TTS (推荐)</option>
                   <option value="replicate">Replicate (高质量)</option>
                 </select>
               </div>
+
+              {/* OpenAI TTS Settings */}
+              {ttsProvider === 'openai' && (
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-green-800">
+                      <strong>✨ OpenAI TTS：</strong>性价比最高的选择！声音自然流畅，
+                      价格便宜（HD质量 $0.030/1K字符），速度快。
+                      如果您已经有 OpenAI API Key，可以直接使用同一个 Key。
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      OpenAI API Key
+                    </label>
+                    <input
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="输入你的 OpenAI API Key（与对话AI共用）"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      可以使用与 OpenAI 对话模型相同的 API Key
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      音色选择
+                    </label>
+                    <select
+                      value={openaiTTSVoice}
+                      onChange={(e) => setOpenaiTTSVoice(e.target.value as any)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="nova">Nova - 女声、友好、活泼（推荐）</option>
+                      <option value="shimmer">Shimmer - 女声、温柔、甜美</option>
+                      <option value="alloy">Alloy - 中性、清晰、适合教学</option>
+                      <option value="echo">Echo - 男声、专业、沉稳</option>
+                      <option value="fable">Fable - 英式口音、优雅</option>
+                      <option value="onyx">Onyx - 男声、深沉、权威</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      语音质量
+                    </label>
+                    <select
+                      value={openaiTTSModel}
+                      onChange={(e) => setOpenaiTTSModel(e.target.value as 'tts-1' | 'tts-1-hd')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="tts-1-hd">HD 高清质量 - $0.030/1K字符（推荐）</option>
+                      <option value="tts-1">标准质量 - $0.015/1K字符（更便宜）</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      语速调节: {openaiTTSSpeed}x
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="1.5"
+                      step="0.1"
+                      value={openaiTTSSpeed}
+                      onChange={(e) => setOpenaiTTSSpeed(parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>慢速 (0.5x)</span>
+                      <span>正常 (1.0x)</span>
+                      <span>快速 (1.5x)</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      推荐 0.9x，稍微慢一点更适合学习
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs text-blue-800 mb-2">
+                      <strong>💰 费用说明：</strong>
+                    </p>
+                    <ul className="text-xs text-blue-800 space-y-1 ml-4 list-disc">
+                      <li>HD 质量：每小时对话约 $0.10-0.20</li>
+                      <li>标准质量：每小时对话约 $0.05-0.10</li>
+                      <li>比 Replicate 便宜，质量更好</li>
+                      <li>与 OpenAI 对话模型共用 API Key</li>
+                    </ul>
+                  </div>
+                </>
+              )}
 
               {/* Replicate TTS Settings */}
               {ttsProvider === 'replicate' && (
@@ -396,11 +604,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       Replicate API Key
                     </label>
                     <input
-                      type="password"
+                      type="text"
                       value={replicateApiKey}
                       onChange={(e) => setReplicateApiKey(e.target.value)}
                       placeholder="输入你的 Replicate API Key"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       你的API Key会保存在浏览器本地，不会上传到服务器
@@ -455,6 +663,120 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
+          {/* Azure Pronunciation Assessment Settings */}
+          <div className="border-t pt-6">
+            <h3 className="font-medium text-gray-900 mb-3">🎯 发音评估设置</h3>
+            <p className="text-sm text-gray-500 mb-4">使用 Azure 语音服务智能评估发音（可选）</p>
+
+            <div className="space-y-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    启用发音评估
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    AI会在适当时候自动评估你的发音并给出建议
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPronunciationEnabled(!pronunciationEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    pronunciationEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      pronunciationEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {pronunciationEnabled && (
+                <>
+                  {/* Azure API Key */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Azure Speech API Key
+                    </label>
+                    <input
+                      type="text"
+                      value={azureSpeechKey}
+                      onChange={(e) => setAzureSpeechKey(e.target.value)}
+                      placeholder="输入你的 Azure Speech API Key"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                    />
+                  </div>
+
+                  {/* Azure Region */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Azure 区域
+                    </label>
+                    <select
+                      value={azureSpeechRegion}
+                      onChange={(e) => setAzureSpeechRegion(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="eastus">East US (美国东部)</option>
+                      <option value="westus">West US (美国西部)</option>
+                      <option value="eastasia">East Asia (东亚)</option>
+                      <option value="southeastasia">Southeast Asia (东南亚)</option>
+                      <option value="westeurope">West Europe (西欧)</option>
+                    </select>
+                  </div>
+
+                  {/* User Level */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      你的英语水平
+                    </label>
+                    <select
+                      value={userLevel}
+                      onChange={(e) => setUserLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="beginner">初学者 (Beginner)</option>
+                      <option value="intermediate">中级 (Intermediate)</option>
+                      <option value="advanced">高级 (Advanced)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      水平越高，评估频率越低，节省更多费用
+                    </p>
+                  </div>
+
+                  {/* Cost Info */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-xs text-green-800 mb-2">
+                      <strong>💡 智能评估策略：</strong>
+                    </p>
+                    <ul className="text-xs text-green-800 space-y-1 ml-4 list-disc">
+                      <li>仅在必要时评估（低置信度、困难发音、定期检查）</li>
+                      <li>评估率约 20-25%，节省 75-80% 费用</li>
+                      <li>每月约 $0.60-0.75（每天练习30分钟）</li>
+                      <li>完全无感知，不影响对话流畅度</li>
+                    </ul>
+                  </div>
+
+                  {/* Setup Guide */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-2">
+                      <strong>🔑 如何获取 Azure Speech API Key：</strong>
+                    </p>
+                    <ol className="text-xs text-gray-600 space-y-1 ml-4 list-decimal">
+                      <li>访问 <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Azure Portal</a></li>
+                      <li>创建 "Speech Services" 资源</li>
+                      <li>在资源页面找到 "Keys and Endpoint"</li>
+                      <li>复制 Key 1 或 Key 2 和区域信息</li>
+                    </ol>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* How to get API Key */}
           {selectedProvider?.requiresApiKey && provider !== 'custom' && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -465,6 +787,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <p>1. 访问 <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">OpenAI Platform</a></p>
                     <p>2. 注册/登录账号</p>
                     <p>3. 进入 API Keys 页面创建新的 API Key</p>
+                  </>
+                )}
+                {provider === 'replicate' && (
+                  <>
+                    <p>1. 访问 <a href="https://replicate.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Replicate.com</a></p>
+                    <p>2. 注册/登录账号</p>
+                    <p>3. 进入 Account Settings → API Tokens</p>
+                    <p>4. 创建新的 API Token 并复制</p>
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-xs text-yellow-800">
+                        <strong>💰 费用：</strong>Gemma 2 27B 约 $0.0001/token，对话成本很低
+                      </p>
+                    </div>
                   </>
                 )}
                 {provider === 'doubao' && (

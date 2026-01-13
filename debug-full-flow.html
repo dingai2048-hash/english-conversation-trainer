@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整流程调试</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4ec9b0;
+            margin-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #1e1e1e;
+            border-left: 3px solid #007acc;
+            border-radius: 4px;
+        }
+        .section h3 {
+            color: #4ec9b0;
+            margin-top: 0;
+        }
+        .log {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .log-line {
+            margin: 5px 0;
+            padding: 3px 5px;
+        }
+        .log-info { color: #4fc1ff; }
+        .log-success { color: #4ec9b0; font-weight: bold; }
+        .log-error { color: #f48771; font-weight: bold; }
+        .log-warning { color: #dcdcaa; }
+        button {
+            background: #007acc;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        button:disabled {
+            background: #3e3e42;
+            cursor: not-allowed;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            color: #d4d4d4;
+            border-radius: 4px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-ok { background: #4ec9b0; color: #1e1e1e; }
+        .status-fail { background: #f48771; color: #1e1e1e; }
+        .status-pending { background: #dcdcaa; color: #1e1e1e; }
+        pre {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 11px;
+        }
+        .code {
+            background: #2d2d30;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #ce9178;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Replicate API 完整流程调试</h1>
+        <p>这个工具会模拟应用的完整流程，帮助定位问题</p>
+
+        <div class="section">
+            <h3>📝 步骤 1: 配置信息</h3>
+            <label>Replicate API Key:</label>
+            <input type="password" id="apiKey" placeholder="r8_xxxxxxxxxxxxx">
+            
+            <label>选择模型:</label>
+            <select id="model">
+                <option value="meta/gemma-2-27b-it">meta/gemma-2-27b-it</option>
+                <option value="meta/gemma-2-9b-it">meta/gemma-2-9b-it</option>
+                <option value="meta/llama-2-70b-chat">meta/llama-2-70b-chat</option>
+            </select>
+
+            <label>测试消息:</label>
+            <input type="text" id="testMessage" value="Hello" placeholder="Hello">
+
+            <button onclick="runFullTest()">🚀 开始完整测试</button>
+            <button onclick="clearLog()">🗑️ 清空日志</button>
+        </div>
+
+        <div class="section">
+            <h3>📊 测试进度</h3>
+            <div id="progress"></div>
+        </div>
+
+        <div class="section">
+            <h3>📋 详细日志</h3>
+            <div class="log" id="log"></div>
+        </div>
+
+        <div class="section" id="resultSection" style="display:none;">
+            <h3>✅ 测试结果</h3>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const MODEL_VERSIONS = {
+            'meta/gemma-2-27b-it': '2790a695e5dcae15506138cc4718d1106d0d475e6dca4b1d43f42414647993d5',
+            'meta/gemma-2-9b-it': 'dff94eaf770e1fc211e425a50b51baa8e4cac6c39ef074681f9e39d778773626',
+            'meta/llama-2-70b-chat': '02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3',
+        };
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const line = document.createElement('div');
+            line.className = `log-line log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('progress').innerHTML = '';
+            document.getElementById('resultSection').style.display = 'none';
+        }
+
+        function updateProgress(step, status) {
+            const progressDiv = document.getElementById('progress');
+            const statusClass = status === 'ok' ? 'status-ok' : status === 'fail' ? 'status-fail' : 'status-pending';
+            const statusText = status === 'ok' ? '✅ 通过' : status === 'fail' ? '❌ 失败' : '⏳ 进行中';
+            
+            let stepDiv = document.getElementById(`step-${step}`);
+            if (!stepDiv) {
+                stepDiv = document.createElement('div');
+                stepDiv.id = `step-${step}`;
+                stepDiv.style.margin = '10px 0';
+                progressDiv.appendChild(stepDiv);
+            }
+            
+            stepDiv.innerHTML = `<strong>${step}</strong><span class="status ${statusClass}">${statusText}</span>`;
+        }
+
+        async function runFullTest() {
+            clearLog();
+            
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const model = document.getElementById('model').value;
+            const testMessage = document.getElementById('testMessage').value.trim();
+
+            log('🚀 开始完整流程测试...', 'info');
+            log('', 'info');
+
+            // 步骤 1: 验证输入
+            updateProgress('1. 验证输入参数', 'pending');
+            log('📝 步骤 1: 验证输入参数', 'info');
+            
+            if (!apiKey) {
+                log('❌ API Key 为空', 'error');
+                updateProgress('1. 验证输入参数', 'fail');
+                return;
+            }
+            
+            if (!apiKey.startsWith('r8_')) {
+                log('⚠️ API Key 格式可能不正确（应该以 r8_ 开头）', 'warning');
+            }
+            
+            log(`✅ API Key: ${apiKey.substring(0, 15)}...`, 'success');
+            log(`✅ 模型: ${model}`, 'success');
+            log(`✅ 测试消息: "${testMessage}"`, 'success');
+            updateProgress('1. 验证输入参数', 'ok');
+            log('', 'info');
+
+            // 步骤 2: 检查 endpoint 判断逻辑
+            updateProgress('2. 检查 endpoint 判断', 'pending');
+            log('🔍 步骤 2: 检查 endpoint 判断逻辑', 'info');
+            
+            const endpoint = 'https://api.replicate.com';
+            const shouldUseReplicate = endpoint.includes('replicate.com');
+            
+            log(`Endpoint: ${endpoint}`, 'info');
+            log(`包含 'replicate.com': ${shouldUseReplicate}`, shouldUseReplicate ? 'success' : 'error');
+            
+            if (!shouldUseReplicate) {
+                log('❌ Endpoint 不包含 replicate.com，不会调用 Replicate API', 'error');
+                updateProgress('2. 检查 endpoint 判断', 'fail');
+                return;
+            }
+            
+            updateProgress('2. 检查 endpoint 判断', 'ok');
+            log('', 'info');
+
+            // 步骤 3: 构建请求
+            updateProgress('3. 构建 API 请求', 'pending');
+            log('📦 步骤 3: 构建 API 请求', 'info');
+            
+            const systemPrompt = "You are a helpful assistant.";
+            const prompt = `${systemPrompt}\n\nUser: ${testMessage}\nAssistant:`;
+            const version = MODEL_VERSIONS[model];
+            
+            const requestBody = {
+                version: version,
+                input: {
+                    prompt: prompt,
+                    max_new_tokens: 150,
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    repetition_penalty: 1.1,
+                }
+            };
+            
+            log(`模型版本 ID: ${version}`, 'info');
+            log(`Prompt 长度: ${prompt.length} 字符`, 'info');
+            log('请求体:', 'info');
+            log(JSON.stringify(requestBody, null, 2), 'info');
+            updateProgress('3. 构建 API 请求', 'ok');
+            log('', 'info');
+
+            // 步骤 4: 创建 Prediction
+            updateProgress('4. 创建 Prediction', 'pending');
+            log('📤 步骤 4: 创建 Prediction', 'info');
+            
+            try {
+                log('发送 POST 请求到: https://api.replicate.com/v1/predictions', 'info');
+                log(`Authorization: Token ${apiKey.substring(0, 15)}...`, 'info');
+                
+                const createResponse = await fetch('https://api.replicate.com/v1/predictions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${apiKey}`,
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+
+                log(`响应状态: ${createResponse.status} ${createResponse.statusText}`, createResponse.ok ? 'success' : 'error');
+
+                if (!createResponse.ok) {
+                    const errorText = await createResponse.text();
+                    log(`❌ 错误响应: ${errorText}`, 'error');
+                    updateProgress('4. 创建 Prediction', 'fail');
+                    
+                    // 分析错误
+                    if (createResponse.status === 401) {
+                        log('', 'info');
+                        log('💡 401 错误通常表示:', 'warning');
+                        log('  - API Key 无效或过期', 'warning');
+                        log('  - API Key 格式错误', 'warning');
+                        log('  - 请访问 https://replicate.com/account/api-tokens 检查', 'warning');
+                    } else if (createResponse.status === 402) {
+                        log('', 'info');
+                        log('💡 402 错误通常表示:', 'warning');
+                        log('  - 账户余额不足', 'warning');
+                        log('  - 请访问 https://replicate.com/account/billing 充值', 'warning');
+                    } else if (createResponse.status === 404) {
+                        log('', 'info');
+                        log('💡 404 错误通常表示:', 'warning');
+                        log('  - 模型版本 ID 不正确', 'warning');
+                        log('  - 模型可能已更新', 'warning');
+                    }
+                    
+                    return;
+                }
+
+                const prediction = await createResponse.json();
+                log(`✅ Prediction 创建成功!`, 'success');
+                log(`Prediction ID: ${prediction.id}`, 'success');
+                log(`初始状态: ${prediction.status}`, 'info');
+                log('完整响应:', 'info');
+                log(JSON.stringify(prediction, null, 2), 'info');
+                updateProgress('4. 创建 Prediction', 'ok');
+                log('', 'info');
+
+                // 步骤 5: 轮询结果
+                updateProgress('5. 轮询 Prediction 结果', 'pending');
+                log('⏳ 步骤 5: 轮询 Prediction 结果', 'info');
+                log('（这可能需要 10-60 秒，请耐心等待...）', 'warning');
+                log('', 'info');
+
+                let attempts = 0;
+                const maxAttempts = 60;
+                let finalResult = null;
+
+                while (attempts < maxAttempts) {
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    log(`🔄 轮询尝试 ${attempts}/${maxAttempts}...`, 'info');
+
+                    const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+                        headers: {
+                            'Authorization': `Token ${apiKey}`,
+                        },
+                    });
+
+                    if (!pollResponse.ok) {
+                        log(`❌ 轮询失败: ${pollResponse.status}`, 'error');
+                        updateProgress('5. 轮询 Prediction 结果', 'fail');
+                        return;
+                    }
+
+                    const pollData = await pollResponse.json();
+                    log(`   状态: ${pollData.status}`, 'info');
+
+                    if (pollData.status === 'succeeded') {
+                        log('', 'info');
+                        log('🎉 Prediction 成功!', 'success');
+                        const output = Array.isArray(pollData.output) 
+                            ? pollData.output.join('') 
+                            : pollData.output;
+                        log(`💬 AI 回复: ${output}`, 'success');
+                        log('', 'info');
+                        log('完整响应:', 'info');
+                        log(JSON.stringify(pollData, null, 2), 'info');
+                        updateProgress('5. 轮询 Prediction 结果', 'ok');
+                        finalResult = output;
+                        break;
+                    }
+
+                    if (pollData.status === 'failed') {
+                        log('', 'info');
+                        log(`❌ Prediction 失败: ${pollData.error}`, 'error');
+                        updateProgress('5. 轮询 Prediction 结果', 'fail');
+                        return;
+                    }
+
+                    if (pollData.status === 'canceled') {
+                        log('', 'info');
+                        log('❌ Prediction 被取消', 'error');
+                        updateProgress('5. 轮询 Prediction 结果', 'fail');
+                        return;
+                    }
+                }
+
+                if (attempts >= maxAttempts) {
+                    log('', 'info');
+                    log('❌ 超时：等待时间过长（60秒）', 'error');
+                    updateProgress('5. 轮询 Prediction 结果', 'fail');
+                    return;
+                }
+
+                // 显示最终结果
+                log('', 'info');
+                log('═══════════════════════════════════════', 'success');
+                log('✅ 完整流程测试成功！', 'success');
+                log('═══════════════════════════════════════', 'success');
+                log('', 'info');
+
+                const resultSection = document.getElementById('resultSection');
+                const resultDiv = document.getElementById('result');
+                resultSection.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="background: #1e1e1e; padding: 15px; border-radius: 4px; border-left: 3px solid #4ec9b0;">
+                        <h4 style="color: #4ec9b0; margin-top: 0;">测试结论</h4>
+                        <p><strong>✅ Replicate API 工作正常！</strong></p>
+                        <p>你的 API Key、网络连接、代码逻辑都没有问题。</p>
+                        <p><strong>AI 回复:</strong> <span class="code">${finalResult}</span></p>
+                        <hr style="border-color: #3e3e42;">
+                        <h4 style="color: #4ec9b0;">下一步</h4>
+                        <ol>
+                            <li>在应用中打开设置（右上角⚙️）</li>
+                            <li>选择 "Replicate (Gemma 2)"</li>
+                            <li>输入相同的 API Key</li>
+                            <li>选择相同的模型</li>
+                            <li>保存设置</li>
+                            <li>刷新页面（Ctrl+Shift+R）</li>
+                            <li>测试对话</li>
+                        </ol>
+                        <p><strong>如果应用中仍然失败，可能是：</strong></p>
+                        <ul>
+                            <li>浏览器缓存问题 → 强制刷新</li>
+                            <li>设置未正确保存 → 检查 localStorage</li>
+                            <li>代码逻辑问题 → 查看浏览器控制台错误</li>
+                        </ul>
+                    </div>
+                `;
+
+            } catch (error) {
+                log('', 'info');
+                log(`❌ 发生错误: ${error.message}`, 'error');
+                log(`错误类型: ${error.name}`, 'error');
+                log(`错误堆栈: ${error.stack}`, 'error');
+                updateProgress('测试失败', 'fail');
+
+                const resultSection = document.getElementById('resultSection');
+                const resultDiv = document.getElementById('result');
+                resultSection.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="background: #1e1e1e; padding: 15px; border-radius: 4px; border-left: 3px solid #f48771;">
+                        <h4 style="color: #f48771; margin-top: 0;">测试失败</h4>
+                        <p><strong>错误:</strong> <span class="code">${error.message}</span></p>
+                        <p><strong>可能原因:</strong></p>
+                        <ul>
+                            <li>网络连接问题</li>
+                            <li>CORS 限制</li>
+                            <li>浏览器扩展阻止请求</li>
+                            <li>防火墙或代理设置</li>
+                        </ul>
+                        <p><strong>建议:</strong></p>
+                        <ol>
+                            <li>检查网络连接</li>
+                            <li>尝试无痕模式</li>
+                            <li>禁用浏览器扩展</li>
+                            <li>检查防火墙设置</li>
+                        </ol>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

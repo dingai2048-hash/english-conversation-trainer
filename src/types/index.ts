@@ -39,6 +39,8 @@ export interface AppState {
   error: string | null;
   /** Whether the AI is currently speaking (TTS) */
   isSpeaking: boolean;
+  /** Whether continuous conversation mode is active */
+  isContinuousMode: boolean;
 }
 
 /**
@@ -107,6 +109,8 @@ export interface MicButtonProps {
   onToggleRecording: () => void;
   /** Whether the button is disabled */
   disabled: boolean;
+  /** Whether continuous mode is active */
+  isContinuousMode?: boolean;
 }
 
 /**
@@ -155,4 +159,73 @@ export interface AIConversationService {
   sendMessage(message: string, history: Message[]): Promise<string>;
   /** Translate English text to Chinese */
   translateToZh(text: string): Promise<string>;
+}
+
+/**
+ * Azure pronunciation assessment result
+ */
+export interface PronunciationAssessmentResult {
+  /** Overall accuracy score (0-100) */
+  accuracyScore: number;
+  /** Pronunciation score (0-100) */
+  pronunciationScore: number;
+  /** Fluency score (0-100) */
+  fluencyScore: number;
+  /** Completeness score (0-100) */
+  completenessScore: number;
+  /** Word-level details */
+  words: WordAssessment[];
+  /** Whether correction is needed */
+  shouldCorrect: boolean;
+  /** Feedback message for user */
+  feedback?: string;
+}
+
+/**
+ * Word-level pronunciation assessment
+ */
+export interface WordAssessment {
+  /** The word text */
+  word: string;
+  /** Accuracy score (0-100) */
+  accuracyScore: number;
+  /** Error type if any */
+  errorType?: 'Mispronunciation' | 'Omission' | 'Insertion';
+}
+
+/**
+ * User proficiency level
+ */
+export type UserLevel = 'beginner' | 'intermediate' | 'advanced';
+
+/**
+ * Assessment decision context
+ */
+export interface AssessmentContext {
+  /** Recognized text */
+  text: string;
+  /** Recognition confidence (0-1) */
+  confidence: number;
+  /** Audio blob */
+  audioBlob: Blob;
+  /** Message count in current session */
+  messageCount: number;
+  /** Time since last assessment (ms) */
+  timeSinceLastAssessment: number;
+  /** User proficiency level */
+  userLevel: UserLevel;
+}
+
+/**
+ * Assessment statistics
+ */
+export interface AssessmentStats {
+  /** Total messages processed */
+  totalMessages: number;
+  /** Number of assessments performed */
+  assessmentCount: number;
+  /** Assessment rate (0-1) */
+  assessmentRate: number;
+  /** Estimated cost in USD */
+  estimatedCost: number;
 }

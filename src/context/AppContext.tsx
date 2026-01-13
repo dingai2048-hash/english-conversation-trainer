@@ -29,6 +29,15 @@ interface AppContextValue extends AppState {
   // Error handling actions
   setError: (error: string | null) => void;
   clearError: () => void;
+  
+  // Continuous mode actions
+  setContinuousMode: (isContinuous: boolean) => void;
+  toggleContinuousMode: () => void;
+  
+  // Session state actions
+  isInSession: boolean;
+  startSession: () => void;
+  endSession: () => void;
 }
 
 /**
@@ -41,6 +50,11 @@ const initialState: AppState = {
   showTranslation: false,
   error: null,
   isSpeaking: false,
+  isContinuousMode: false,
+};
+
+const initialSessionState = {
+  isInSession: false,
 };
 
 /**
@@ -65,6 +79,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [showTranslation, setShowTranslationState] = useState<boolean>(initialState.showTranslation);
   const [error, setErrorState] = useState<string | null>(initialState.error);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(initialState.isSpeaking);
+  const [isContinuousMode, setIsContinuousModeState] = useState<boolean>(initialState.isContinuousMode);
+  const [isInSession, setIsInSession] = useState<boolean>(initialSessionState.isInSession);
 
   /**
    * Add a new message to the conversation
@@ -137,6 +153,35 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setErrorState(null);
   }, []);
 
+  /**
+   * Set continuous mode state
+   */
+  const setContinuousMode = useCallback((isContinuous: boolean) => {
+    setIsContinuousModeState(isContinuous);
+  }, []);
+
+  /**
+   * Toggle continuous mode
+   */
+  const toggleContinuousMode = useCallback(() => {
+    setIsContinuousModeState(prev => !prev);
+  }, []);
+
+  /**
+   * Start a conversation session
+   */
+  const startSession = useCallback(() => {
+    setIsInSession(true);
+    setMessages([]); // Clear previous messages when starting new session
+  }, []);
+
+  /**
+   * End a conversation session
+   */
+  const endSession = useCallback(() => {
+    setIsInSession(false);
+  }, []);
+
   const value: AppContextValue = {
     messages,
     isRecording,
@@ -144,6 +189,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     showTranslation,
     error,
     isSpeaking,
+    isContinuousMode,
+    isInSession,
     addMessage,
     clearMessages,
     setRecording,
@@ -153,6 +200,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setShowTranslation,
     setError,
     clearError,
+    setContinuousMode,
+    toggleContinuousMode,
+    startSession,
+    endSession,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

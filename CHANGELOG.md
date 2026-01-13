@@ -7,6 +7,23 @@
 ## [未发布]
 
 ### 新增
+- 📜 **对话历史功能**: 自动保存和管理对话记录
+  - 自动保存对话（2条消息后触发，2秒延迟）
+  - AI自动生成中文摘要（5-10个字）
+  - 历史记录侧边栏显示最近20条会话
+  - 统计信息：总会话数、总消息数、练习天数
+  - 导出历史记录为JSON文件
+  - 最多保存100个会话（自动清理旧记录）
+  - 创建 `ConversationHistoryService.ts` 服务
+  - 创建 `CONVERSATION_HISTORY.md` 功能说明
+
+- 🎤 **发音评价功能**: AI评价用户发音
+  - 每条用户消息添加"评价发音"按钮
+  - AI提供简短、鼓励性的反馈（A1-A2英语水平）
+  - 包含清晰度评估和改进建议
+  - AI语音朗读评价内容
+  - 创建 `PRONUNCIATION_FEEDBACK.md` 功能说明
+
 - 🔊 **Replicate TTS 支持**: 添加高质量云端语音合成选项
   - 支持 Turbo 模式（快速，低延迟）
   - 支持 HD 模式（高质量，自然）
@@ -16,23 +33,48 @@
   - 新增 `REPLICATE_TTS_GUIDE.md` 使用指南
 
 ### 改进
+- 🎨 **UI布局优化**:
+  - 对话显示区域固定高度（600px）
+  - 支持滚动查看历史消息
+  - 自动滚动到最新消息
+  - 历史记录侧边栏响应式设计
+
+- 🔧 **TTS服务修复**:
+  - 使用 `useRef` 保存服务实例，避免重新初始化
+  - 改进语音加载和错误处理
+  - 添加详细的控制台日志
+  - 创建 `TROUBLESHOOTING_TTS.md` 故障排除指南
+
 - ⚙️ **设置界面优化**: 
   - 添加语音合成设置部分
   - 支持选择TTS提供商（浏览器/Replicate）
   - 添加语音质量选择（Turbo/HD）
   - 显示费用说明和使用提示
+
 - 📚 **文档更新**:
   - 更新 `API_SETUP_GUIDE.md` 添加TTS配置说明
-  - 更新 `README.md` 添加Replicate TTS信息
+  - 更新 `README.md` 添加新功能信息
   - 创建详细的 `REPLICATE_TTS_GUIDE.md`
+  - 创建 `CONVERSATION_HISTORY.md`
+  - 创建 `PRONUNCIATION_FEEDBACK.md`
+  - 创建 `TROUBLESHOOTING_TTS.md`
 
 ### 技术改进
-- 🧪 **测试覆盖**: 添加 `ReplicateTTSService.test.ts`
-- 🔧 **类型定义**: 扩展 `AISettings` 接口支持TTS配置
-- 🏗️ **架构优化**: TTS服务支持动态切换
+- 🧪 **测试覆盖**: 
+  - 添加 `ReplicateTTSService.test.ts`
+  - 添加 `ConversationHistoryService.test.ts`（12个测试）
+  - 所有新功能测试通过
+- 🔧 **类型定义**: 
+  - 扩展 `AISettings` 接口支持TTS配置
+  - 扩展 `ConversationSession` 接口支持消息计数
+- 🏗️ **架构优化**: 
+  - TTS服务支持动态切换
+  - 对话历史自动保存机制
+  - 使用localStorage持久化数据
 
 ### 测试
-- ✅ 所有 220 个测试通过
+- ✅ 所有 232 个测试通过（220个原有 + 12个新增）
+- ✅ 新增 ConversationHistoryService 单元测试
 - ✅ 新增 ReplicateTTSService 单元测试
 - ✅ 更新 SettingsService 测试以支持新字段
 

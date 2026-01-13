@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 紧急调试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        
+        .warning {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        
+        .info {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status-ok {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .copy-btn {
+            background: #6b7280;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 紧急调试工具</h1>
+        <p class="subtitle">快速诊断 AI 无回应问题</p>
+        
+        <!-- 第 1 步：检查配置 -->
+        <div class="section">
+            <h2>📋 第 1 步：检查配置</h2>
+            <button onclick="checkConfig()">🔍 检查配置</button>
+            <div id="configResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 第 2 步：测试 API 连接 -->
+        <div class="section">
+            <h2>🌐 第 2 步：测试 OpenAI API</h2>
+            <button onclick="testOpenAI()">🧪 测试 API 连接</button>
+            <div id="apiResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 第 3 步：测试语音识别 -->
+        <div class="section">
+            <h2>🎤 第 3 步：测试语音识别</h2>
+            <button onclick="testSpeechRecognition()">🎙️ 测试麦克风</button>
+            <button onclick="stopSpeechRecognition()">⏹️ 停止</button>
+            <div id="speechResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 第 4 步：查看浏览器日志 -->
+        <div class="section">
+            <h2>📝 第 4 步：查看浏览器日志</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                请打开浏览器控制台（按 F12 或 Cmd+Option+I），然后：
+            </p>
+            <ol style="color: #666; margin-left: 20px; line-height: 1.8;">
+                <li>切换到 <strong>Console</strong> 标签</li>
+                <li>点击麦克风说话</li>
+                <li>查看是否有红色错误信息</li>
+                <li>复制错误信息</li>
+            </ol>
+            <button onclick="copyInstructions()">📋 复制调试指令</button>
+        </div>
+        
+        <!-- 第 5 步：完整流程测试 -->
+        <div class="section">
+            <h2>🔄 第 5 步：完整流程测试</h2>
+            <button onclick="fullFlowTest()">🚀 运行完整测试</button>
+            <div id="fullTestResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <!-- 诊断结果 -->
+        <div class="section" id="diagnosisSection" style="display:none;">
+            <h2>🎯 诊断结果</h2>
+            <div id="diagnosisResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let diagnosisData = {
+            config: null,
+            api: null,
+            speech: null
+        };
+
+        // 检查配置
+        function checkConfig() {
+            const resultDiv = document.getElementById('configResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p class="info">⏳ 正在检查配置...</p>';
+            
+            try {
+                const settings = localStorage.getItem('ai-conversation-settings');
+                
+                if (!settings) {
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ 未找到配置</p>
+                        <p>请先配置 OpenAI API Key</p>
+                        <button onclick="window.open('自动配置OpenAI.html', '_blank')">打开配置工具</button>
+                    `;
+                    diagnosisData.config = { status: 'error', message: '未找到配置' };
+                    return;
+                }
+                
+                const config = JSON.parse(settings);
+                
+                let html = '<p class="success">✅ 找到配置</p><pre>';
+                html += `提供商: ${config.provider || '未设置'}\n`;
+                html += `模型: ${config.model || '未设置'}\n`;
+                html += `API Key: ${config.apiKey ? config.apiKey.substring(0, 20) + '...' : '未设置'}\n`;
+                html += `端点: ${config.endpoint || '未设置'}\n`;
+                html += `TTS 提供商: ${config.ttsProvider || '未设置'}\n`;
+                html += `TTS 音色: ${config.openaiTTSVoice || '未设置'}\n`;
+                html += `TTS 模型: ${config.openaiTTSModel || '未设置'}\n`;
+                html += '</pre>';
+                
+                // 检查关键配置
+                const issues = [];
+                if (!config.apiKey || config.apiKey === 'mock') {
+                    issues.push('❌ API Key 未设置或使用 mock');
+                }
+                if (!config.provider || config.provider === 'mock') {
+                    issues.push('❌ 提供商未设置或使用 mock');
+                }
+                if (!config.endpoint) {
+                    issues.push('⚠️ API 端点未设置');
+                }
+                
+                if (issues.length > 0) {
+                    html += '<p class="warning">⚠️ 发现问题：</p><ul>';
+                    issues.forEach(issue => {
+                        html += `<li>${issue}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '<button onclick="window.open(\'自动配置OpenAI.html\', \'_blank\')">重新配置</button>';
+                    diagnosisData.config = { status: 'warning', issues };
+                } else {
+                    html += '<p class="success">✅ 配置看起来正常</p>';
+                    diagnosisData.config = { status: 'ok', config };
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 配置解析失败</p>
+                    <pre>${error.message}</pre>
+                    <button onclick="window.open('自动配置OpenAI.html', '_blank')">重新配置</button>
+                `;
+                diagnosisData.config = { status: 'error', error: error.message };
+            }
+        }
+
+        // 测试 OpenAI API
+        async function testOpenAI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p class="info">⏳ 正在测试 OpenAI API...</p>';
+            
+            try {
+                const settings = localStorage.getItem('ai-conversation-settings');
+                if (!settings) {
+                    resultDiv.innerHTML = '<p class="error">❌ 未找到配置，请先配置</p>';
+                    return;
+                }
+                
+                const config = JSON.parse(settings);
+                
+                if (!config.apiKey || config.apiKey === 'mock') {
+                    resultDiv.innerHTML = '<p class="error">❌ API Key 未设置或使用 mock</p>';
+                    return;
+                }
+                
+                const endpoint = config.endpoint || 'https://api.openai.com/v1/chat/completions';
+                
+                resultDiv.innerHTML = '<p class="info">⏳ 正在调用 API...</p>';
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: config.model || 'gpt-4o',
+                        messages: [
+                            { role: 'system', content: 'You are a helpful assistant.' },
+                            { role: 'user', content: 'Say "Hello, I am working!" in one sentence.' }
+                        ],
+                        max_tokens: 50
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    let errorMsg = data.error?.message || response.statusText;
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ API 调用失败</p>
+                        <p><strong>状态码:</strong> ${response.status}</p>
+                        <p><strong>错误信息:</strong></p>
+                        <pre>${errorMsg}</pre>
+                        <button class="copy-btn" onclick="copyText('${errorMsg.replace(/'/g, "\\'")}')">复制错误</button>
+                    `;
+                    diagnosisData.api = { status: 'error', statusCode: response.status, error: errorMsg };
+                    return;
+                }
+                
+                const reply = data.choices[0].message.content;
+                resultDiv.innerHTML = `
+                    <p class="success">✅ API 调用成功！</p>
+                    <p><strong>AI 回复:</strong></p>
+                    <pre>${reply}</pre>
+                    <p class="success">✅ OpenAI API 工作正常</p>
+                `;
+                diagnosisData.api = { status: 'ok', reply };
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 测试失败</p>
+                    <pre>${error.message}</pre>
+                    <button class="copy-btn" onclick="copyText('${error.message.replace(/'/g, "\\'")}')">复制错误</button>
+                `;
+                diagnosisData.api = { status: 'error', error: error.message };
+            }
+        }
+
+        // 测试语音识别
+        function testSpeechRecognition() {
+            const resultDiv = document.getElementById('speechResult');
+            resultDiv.style.display = 'block';
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                resultDiv.innerHTML = '<p class="error">❌ 浏览器不支持语音识别</p><p>请使用 Chrome 或 Edge 浏览器</p>';
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            
+            let transcript = '';
+            
+            recognition.onstart = () => {
+                resultDiv.innerHTML = '<p class="success">✅ 麦克风已启动</p><p class="info">🎤 请说话...</p>';
+            };
+            
+            recognition.onresult = (event) => {
+                transcript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript + ' ';
+                }
+                resultDiv.innerHTML = `
+                    <p class="success">✅ 正在识别...</p>
+                    <p><strong>识别内容:</strong></p>
+                    <pre>${transcript}</pre>
+                `;
+                diagnosisData.speech = { status: 'ok', transcript };
+            };
+            
+            recognition.onerror = (event) => {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 语音识别错误</p>
+                    <pre>${event.error}</pre>
+                `;
+                diagnosisData.speech = { status: 'error', error: event.error };
+            };
+            
+            recognition.onend = () => {
+                resultDiv.innerHTML += '<p class="warning">⚠️ 语音识别已停止</p>';
+            };
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ 启动失败: ${error.message}</p>`;
+            }
+        }
+
+        function stopSpeechRecognition() {
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+
+        // 完整流程测试
+        async function fullFlowTest() {
+            const resultDiv = document.getElementById('fullTestResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p class="info">⏳ 开始完整流程测试...</p>';
+            
+            let html = '<h3>测试结果：</h3>';
+            
+            // 1. 检查配置
+            html += '<p>1️⃣ 检查配置...</p>';
+            try {
+                const settings = localStorage.getItem('ai-conversation-settings');
+                if (!settings) {
+                    html += '<p class="error">❌ 配置不存在</p>';
+                    resultDiv.innerHTML = html;
+                    return;
+                }
+                const config = JSON.parse(settings);
+                if (!config.apiKey || config.apiKey === 'mock') {
+                    html += '<p class="error">❌ API Key 未设置</p>';
+                    resultDiv.innerHTML = html;
+                    return;
+                }
+                html += '<p class="success">✅ 配置正常</p>';
+            } catch (error) {
+                html += `<p class="error">❌ 配置错误: ${error.message}</p>`;
+                resultDiv.innerHTML = html;
+                return;
+            }
+            
+            resultDiv.innerHTML = html;
+            
+            // 2. 测试 API
+            html += '<p>2️⃣ 测试 API 连接...</p>';
+            resultDiv.innerHTML = html;
+            
+            try {
+                const settings = JSON.parse(localStorage.getItem('ai-conversation-settings'));
+                const response = await fetch(settings.endpoint || 'https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${settings.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: settings.model || 'gpt-4o',
+                        messages: [{ role: 'user', content: 'Hi' }],
+                        max_tokens: 20
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    html += `<p class="error">❌ API 调用失败: ${error.error?.message || response.statusText}</p>`;
+                    resultDiv.innerHTML = html;
+                    return;
+                }
+                
+                html += '<p class="success">✅ API 连接正常</p>';
+            } catch (error) {
+                html += `<p class="error">❌ API 测试失败: ${error.message}</p>`;
+                resultDiv.innerHTML = html;
+                return;
+            }
+            
+            resultDiv.innerHTML = html;
+            
+            // 3. 检查浏览器支持
+            html += '<p>3️⃣ 检查浏览器支持...</p>';
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                html += '<p class="error">❌ 浏览器不支持语音识别</p>';
+            } else {
+                html += '<p class="success">✅ 浏览器支持语音识别</p>';
+            }
+            
+            resultDiv.innerHTML = html;
+            
+            // 总结
+            html += '<hr style="margin: 20px 0;"><h3>🎯 诊断总结：</h3>';
+            html += '<p class="success">✅ 所有测试通过！</p>';
+            html += '<p>如果应用还是不工作，请：</p>';
+            html += '<ol style="margin-left: 20px; line-height: 1.8;">';
+            html += '<li>打开浏览器控制台（F12）</li>';
+            html += '<li>切换到 Console 标签</li>';
+            html += '<li>点击麦克风说话</li>';
+            html += '<li>查看红色错误信息</li>';
+            html += '<li>复制错误信息并告诉开发者</li>';
+            html += '</ol>';
+            
+            resultDiv.innerHTML = html;
+            
+            // 显示诊断结果
+            showDiagnosis();
+        }
+
+        function showDiagnosis() {
+            const section = document.getElementById('diagnosisSection');
+            const resultDiv = document.getElementById('diagnosisResult');
+            
+            section.style.display = 'block';
+            
+            let html = '<h3>完整诊断报告：</h3>';
+            html += '<pre>' + JSON.stringify(diagnosisData, null, 2) + '</pre>';
+            html += '<button class="copy-btn" onclick="copyDiagnosis()">📋 复制诊断报告</button>';
+            
+            resultDiv.innerHTML = html;
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 已复制到剪贴板');
+            });
+        }
+
+        function copyDiagnosis() {
+            const text = JSON.stringify(diagnosisData, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 诊断报告已复制到剪贴板');
+            });
+        }
+
+        function copyInstructions() {
+            const text = `
+调试步骤：
+1. 打开浏览器控制台（F12 或 Cmd+Option+I）
+2. 切换到 Console 标签
+3. 在应用中点击麦克风
+4. 说一句英语
+5. 查看控制台中的日志和错误
+6. 复制所有红色错误信息
+7. 将错误信息发送给开发者
+
+特别注意：
+- 查找包含 [App] 的日志
+- 查找包含 [OpenAI TTS] 的日志
+- 查找包含 [SpeechRecognition] 的日志
+- 查找任何红色的错误信息
+            `.trim();
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 调试指令已复制到剪贴板');
+            });
+        }
+    </script>
+</body>
+</html>

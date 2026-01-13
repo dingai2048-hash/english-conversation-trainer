@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .test-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+        .test-item.testing {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+        .test-item.success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        .test-item.failed {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+        button {
+            background: #4F46E5;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #4338CA;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .recommendation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 网络连接测试</h1>
+        <p>测试你的网络是否可以访问各个 AI 服务</p>
+
+        <button id="testBtn" onclick="runTests()">🚀 开始测试</button>
+
+        <div id="results"></div>
+        <div id="recommendation"></div>
+    </div>
+
+    <script>
+        const tests = [
+            {
+                name: 'Replicate API',
+                url: 'https://api.replicate.com/v1/predictions',
+                description: 'Gemma 2 27B 模型服务',
+                domestic: false
+            },
+            {
+                name: 'OpenAI API',
+                url: 'https://api.openai.com/v1/models',
+                description: 'GPT 系列模型',
+                domestic: false
+            },
+            {
+                name: '豆包 API',
+                url: 'https://ark.cn-beijing.volces.com',
+                description: '字节跳动 AI 服务',
+                domestic: true
+            },
+            {
+                name: 'Replicate 官网',
+                url: 'https://replicate.com',
+                description: '检查是否可以访问官网',
+                domestic: false
+            }
+        ];
+
+        async function testConnection(test) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const response = await fetch(test.url, {
+                    method: 'HEAD',
+                    mode: 'no-cors', // 避免 CORS 问题
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                return { success: true, message: '连接成功' };
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return { success: false, message: '连接超时（5秒）' };
+                }
+                return { success: false, message: `连接失败: ${error.message}` };
+            }
+        }
+
+        async function runTests() {
+            const resultsDiv = document.getElementById('results');
+            const recommendationDiv = document.getElementById('recommendation');
+            const testBtn = document.getElementById('testBtn');
+
+            resultsDiv.innerHTML = '';
+            recommendationDiv.innerHTML = '';
+            testBtn.disabled = true;
+            testBtn.textContent = '⏳ 测试中...';
+
+            const results = [];
+
+            for (const test of tests) {
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-item testing';
+                testDiv.innerHTML = `
+                    <h3>🔄 ${test.name}</h3>
+                    <p>${test.description}</p>
+                    <p>正在测试...</p>
+                `;
+                resultsDiv.appendChild(testDiv);
+
+                const result = await testConnection(test);
+                results.push({ ...test, ...result });
+
+                testDiv.className = `test-item ${result.success ? 'success' : 'failed'}`;
+                testDiv.innerHTML = `
+                    <h3>${result.success ? '✅' : '❌'} ${test.name}</h3>
+                    <p>${test.description}</p>
+                    <p><strong>${result.message}</strong></p>
+                    <p><small>URL: ${test.url}</small></p>
+                `;
+            }
+
+            // 生成建议
+            const replicateWorks = results.find(r => r.name === 'Replicate API')?.success;
+            const openaiWorks = results.find(r => r.name === 'OpenAI API')?.success;
+            const doubaoWorks = results.find(r => r.name === '豆包 API')?.success;
+
+            let recommendation = '<h2>📋 建议</h2>';
+
+            if (replicateWorks) {
+                recommendation += `
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                        <h3>✅ 可以使用 Replicate (Gemma 2)</h3>
+                        <p>你的网络可以访问 Replicate API，可以正常使用 Gemma 2 27B 模型。</p>
+                        <ol>
+                            <li>在应用设置中选择 "Replicate (Gemma 2)"</li>
+                            <li>输入你的 API Key</li>
+                            <li>选择模型并保存</li>
+                        </ol>
+                    </div>
+                `;
+            } else {
+                recommendation += `
+                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                        <h3>❌ 无法访问 Replicate API</h3>
+                        <p><strong>原因：</strong>Replicate 服务器在国外，你的网络可能无法直接访问。</p>
+                        <p><strong>解决方案：</strong></p>
+                        <ol>
+                            <li><strong>使用 VPN/代理</strong>（推荐）
+                                <ul>
+                                    <li>开启 VPN 或代理服务</li>
+                                    <li>确保可以访问 https://replicate.com</li>
+                                    <li>然后重新测试</li>
+                                </ul>
+                            </li>
+                            <li><strong>使用国内 AI 服务</strong>
+                                <ul>
+                                    <li>豆包（字节跳动）</li>
+                                    <li>通义千问（阿里云）</li>
+                                    <li>文心一言（百度）</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+                `;
+            }
+
+            if (openaiWorks) {
+                recommendation += `
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                        <h3>✅ 可以使用 OpenAI</h3>
+                        <p>你的网络可以访问 OpenAI API。</p>
+                        <ol>
+                            <li>访问 https://platform.openai.com 获取 API Key</li>
+                            <li>在应用设置中选择 "OpenAI"</li>
+                            <li>输入 API Key 并选择模型</li>
+                        </ol>
+                    </div>
+                `;
+            }
+
+            if (doubaoWorks) {
+                recommendation += `
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                        <h3>✅ 可以使用豆包</h3>
+                        <p>你的网络可以访问豆包 API（国内服务）。</p>
+                        <ol>
+                            <li>访问 https://www.volcengine.com/products/doubao</li>
+                            <li>注册并获取 API Key</li>
+                            <li>在应用设置中选择 "豆包"</li>
+                        </ol>
+                    </div>
+                `;
+            }
+
+            recommendationDiv.innerHTML = `<div class="recommendation">${recommendation}</div>`;
+
+            testBtn.disabled = false;
+            testBtn.textContent = '🚀 开始测试';
+        }
+
+        window.onload = function() {
+            document.getElementById('results').innerHTML = `
+                <div class="test-item" style="background: #e3f2fd; border-color: #2196f3;">
+                    <p>👆 点击上方按钮开始测试网络连接</p>
+                    <p>测试将检查你的网络是否可以访问各个 AI 服务</p>
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>

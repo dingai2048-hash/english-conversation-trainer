@@ -53,6 +53,75 @@ describe('TranslationToggle - Property Tests', () => {
       );
     });
 
+    it('should show/hide all translations consistently', () => {
+      fc.assert(
+        fc.property(
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              role: fc.constantFrom('user' as const, 'assistant' as const),
+              content: fc.string({ minLength: 4, maxLength: 20 }),
+              translation: fc.string({ minLength: 4, maxLength: 20 }),
+              timestamp: fc.date(),
+            }),
+            { minLength: 1, maxLength: 10 }
+          ),
+          fc.boolean(),
+          (messages: Message[], showTranslation: boolean) => {
+            const { unmount } = render(
+              <ConversationDisplay messages={messages} showTranslation={showTranslation} />
+            );
+
+            messages.forEach((message) => {
+              expect(screen.getByText(message.content)).toBeInTheDocument();
+              
+              if (showTranslation && message.translation) {
+                const translationElements = screen.queryAllByText(message.translation);
+                expect(translationElements.length).toBeGreaterThan(0);
+              } else if (message.translation) {
+                const translationElements = screen.queryAllByText(message.translation);
+                expect(translationElements.length).toBe(0);
+              }
+            });
+            
+            unmount();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should maintain toggle state across re-renders', () => {
+      fc.assert(
+        fc.property(
+          fc.boolean(),
+          fc.integer({ min: 1, max: 5 }),
+          (initialState: boolean, rerenderCount: number) => {
+            const onToggle = jest.fn();
+            const { rerender, unmount } = render(
+              <TranslationToggle enabled={initialState} onToggle={onToggle} />
+            );
+
+            for (let i = 0; i < rerenderCount; i++) {
+              rerender(<TranslationToggle enabled={initialState} onToggle={onToggle} />);
+              
+              const button = screen.getByRole('button');
+              expect(button).toHaveAttribute('aria-pressed', String(initialState));
+              
+              if (initialState) {
+                expect(screen.getByText('中文翻译：开')).toBeInTheDocument();
+              } else {
+                expect(screen.getByText('中文翻译：关')).toBeInTheDocument();
+              }
+            }
+            
+            unmount();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
     it('should have correct visual state for any enabled value', () => {
       fc.assert(
         fc.property(fc.boolean(), (enabled: boolean) => {
@@ -79,20 +148,100 @@ describe('TranslationToggle - Property Tests', () => {
   });
 
   describe('Property 5: New message auto-translation', () => {
-    it('should not show translation when toggle is disabled', () => {
+    it('should include translation for new messages when toggle is enabled', () => {
       fc.assert(
         fc.property(
-          fc.integer({ min: 1, max: 1000 }),
-          fc.integer({ min: 1, max: 1000 }),
-          (contentNum: number, translationNum: number) => {
-            const newMessage: Message = {
-              id: fc.sample(fc.uuid(), 1)[0],
-              role: 'user',
-              content: `Content-${contentNum}`,
-              translation: `Translation-${translationNum}`,
-              timestamp: new Date(),
-            };
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              role: fc.constantFrom('user' as const, 'assistant' as const),
+              content: fc.string({ minLength: 4, maxLength: 20 }),
+              translation: fc.string({ minLength: 4, maxLength: 20 }),
+              timestamp: fc.date(),
+            }),
+            { minLength: 0, maxLength: 5 }
+          ),
+          fc.record({
+            id: fc.uuid(),
+            role: fc.constantFrom('user' as const, 'assistant' as const),
+            content: fc.string({ minLength: 4, maxLength: 20 }),
+            translation: fc.string({ minLength: 4, maxLength: 20 }),
+            timestamp: fc.date(),
+          }),
+          (existingMessages: Message[], newMessage: Message) => {
+            const showTranslation = true;
             
+            const { rerender, unmount } = render(
+              <ConversationDisplay
+                messages={existingMessages}
+                showTranslation={showTranslation}
+              />
+            );
+
+            rerender(
+              <ConversationDisplay
+                messages={[...existingMessages, newMessage]}
+                showTranslation={showTranslation}
+              />
+            );
+
+            expect(screen.getByText(newMessage.content)).toBeInTheDocument();
+            
+            if (newMessage.translation) {
+              const translationElements = screen.queryAllByText(newMessage.translation);
+              expect(translationElements.length).toBeGreaterThan(0);
+            }
+            
+            unmount();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should handle messages without translation gracefully', () => {
+      fc.assert(
+        fc.property(
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              role: fc.constantFrom('user' as const, 'assistant' as const),
+              content: fc.string({ minLength: 4, maxLength: 20 }),
+              translation: fc.option(fc.string({ minLength: 4, maxLength: 20 }), { nil: undefined }),
+              timestamp: fc.date(),
+            }),
+            { minLength: 1, maxLength: 10 }
+          ),
+          (messages: Message[]) => {
+            const { unmount } = render(<ConversationDisplay messages={messages} showTranslation={true} />);
+
+            messages.forEach((message) => {
+              expect(screen.getByText(message.content)).toBeInTheDocument();
+              
+              if (message.translation) {
+                const translationElements = screen.queryAllByText(message.translation);
+                expect(translationElements.length).toBeGreaterThan(0);
+              }
+            });
+            
+            unmount();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should not show translation for new messages when toggle is disabled', () => {
+      fc.assert(
+        fc.property(
+          fc.record({
+            id: fc.uuid(),
+            role: fc.constantFrom('user' as const, 'assistant' as const),
+            content: fc.string({ minLength: 4, maxLength: 20 }),
+            translation: fc.string({ minLength: 4, maxLength: 20 }),
+            timestamp: fc.date(),
+          }),
+          (newMessage: Message) => {
             const showTranslation = false;
             
             const { unmount } = render(
@@ -104,43 +253,10 @@ describe('TranslationToggle - Property Tests', () => {
 
             expect(screen.getByText(newMessage.content)).toBeInTheDocument();
             
-            const translationElements = screen.queryAllByText(newMessage.translation!);
-            expect(translationElements.length).toBe(0);
-            
-            unmount();
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('should show translation when toggle is enabled', () => {
-      fc.assert(
-        fc.property(
-          fc.integer({ min: 1, max: 1000 }),
-          fc.integer({ min: 1, max: 1000 }),
-          (contentNum: number, translationNum: number) => {
-            const newMessage: Message = {
-              id: fc.sample(fc.uuid(), 1)[0],
-              role: 'assistant',
-              content: `Content-${contentNum}`,
-              translation: `Translation-${translationNum}`,
-              timestamp: new Date(),
-            };
-            
-            const showTranslation = true;
-            
-            const { unmount } = render(
-              <ConversationDisplay
-                messages={[newMessage]}
-                showTranslation={showTranslation}
-              />
-            );
-
-            expect(screen.getByText(newMessage.content)).toBeInTheDocument();
-            
-            const translationElements = screen.queryAllByText(newMessage.translation!);
-            expect(translationElements.length).toBeGreaterThan(0);
+            if (newMessage.translation) {
+              const translationElements = screen.queryAllByText(newMessage.translation);
+              expect(translationElements.length).toBe(0);
+            }
             
             unmount();
           }
