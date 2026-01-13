@@ -2,7 +2,6 @@
   "name": "english-conversation-trainer",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/english",
   "dependencies": {
     "@radix-ui/react-switch": "^1.2.6",
     "@testing-library/dom": "^10.4.1",
