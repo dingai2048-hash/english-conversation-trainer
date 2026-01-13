@@ -1,18 +1,11 @@
 {
-  "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "routes": [
-    {
-      "src": "/english/(.*)",
-      "dest": "/english/$1"
-    },
-    {
-      "src": "/english",
-      "dest": "/english/index.html"
-    }
-  ],
   "rewrites": [
+    {
+      "source": "/english",
+      "destination": "/english/index.html"
+    },
     {
       "source": "/english/(.*)",
       "destination": "/english/index.html"
